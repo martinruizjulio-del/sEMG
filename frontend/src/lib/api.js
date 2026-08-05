@@ -70,4 +70,11 @@ export const api = {
     form.append("config", JSON.stringify(config));
     return request(`/desktops/${desktopId}/subjects/${subjectId}/analyze`, { method: "POST", form });
   },
+
+  channelPreview: (file, channels) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("channels", JSON.stringify(channels));
+    return request("/channel-preview", { method: "POST", form });
+  },
 };

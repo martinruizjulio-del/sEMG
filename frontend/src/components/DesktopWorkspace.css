@@ -115,6 +115,11 @@
   color: var(--text-tertiary);
 }
 
+.preview-loading {
+  font-size: 11px;
+  color: var(--accent);
+}
+
 .analyze-btn {
   align-self: flex-start;
   padding: 10px 20px;

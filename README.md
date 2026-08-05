@@ -49,17 +49,17 @@ Todos estos módulos se han probado contra `S1_1.ASC`, `S11_1.emt` y
 
 ## Pendiente (siguiente iteración)
 
-- Wire real de "Filtrado"/"RMS" en el selector de modo del frontend
-  (hoy el interruptor cambia de estado visualmente, pero el gráfico
-  siempre muestra la vista previa cruda decimada; falta que el
-  backend devuelva también la versión filtrada/RMS decimada, o
-  calcularla en el propio frontend a partir de los datos crudos)
 - Slider de segmentación temporal sobre la forma de onda
 - Plantillas de canal desde la UI (el backend ya las soporta)
 - Comparación entre dos archivos (elegir con qué serie quedarse)
 - Ratio bilateral y normalización de activación en la UI
 - Integración opcional con OneDrive (fase 2)
 - Despliegue en sEMG.actividadfisica.app
+
+**Importante — seguridad**: nunca subas un archivo `backend/.env` con
+secretos reales a este repo (es público). Usa `.env.example` como
+plantilla y pon los valores reales solo en las variables de entorno
+del servicio donde despliegues.
 
 ## Frontend (React + Vite)
 
@@ -110,6 +110,11 @@ npm run dev
   el contenido espectral); media/máximo/mediana/picos se calculan
   sobre la envolvente RMS, igual que en Slider.m. El archivo subido
   nunca se guarda en disco, solo vive en memoria durante la petición.
+- **Vista previa real por modo**: `POST /channel-preview` — dado un
+  archivo y los canales seleccionados, calcula y decima las tres
+  versiones (raw / filtrado / RMS) una sola vez, para que el frontend
+  cambie de modo instantáneamente sin volver a subir el archivo. Ya
+  conectado al interruptor Raw/Filtrado/RMS del frontend.
 
 Probado con un test end-to-end: pedir código → verificar → crear
 escritorio → crear 2 sujetos (uno control, uno experimental) → subir
@@ -157,3 +162,46 @@ git branch -M main
 git remote add origin https://github.com/martinruizjulio-del/sEMG.git
 git push -u origin main
 ```
+
+## Desplegar en Plesk
+
+Este proyecto necesita **dos sitios/apps separados** en Plesk — no
+funciona como un único despliegue:
+
+### 1. Backend en `api.actividadfisica.app`
+
+Plesk usa Phusion Passenger, que sirve apps **WSGI** (Flask/Django).
+FastAPI es **ASGI**, así que se incluye `backend/passenger_wsgi.py`
+que adapta la app con `a2wsgi`.
+
+1. Crea el subdominio `api.actividadfisica.app` en Plesk.
+2. En la ficha del dominio, activa **Python** (icono "Python").
+3. **Application Root**: `backend` (la carpeta, no la raíz del repo).
+4. **Application Startup File**: `passenger_wsgi.py`
+5. **Application Entry point**: `application`
+6. Sube el código (Git o gestor de archivos) y pulsa **Run pip install**
+   (usa `requirements.txt`, ya incluye `a2wsgi`).
+7. En **Variables de entorno** de la app Python, añade:
+   ```
+   ALLOWED_EMAIL=tu-correo@ejemplo.com
+   JWT_SECRET=<genera uno largo y aleatorio>
+   DATABASE_URL=sqlite:///./dev.db
+   RESEND_API_KEY=<opcional, si quieres emails reales>
+   ```
+8. Reinicia la app Python desde Plesk.
+9. Comprueba que `https://api.actividadfisica.app/health` responde
+   `{"status":"ok"}`.
+
+### 2. Frontend en `sEMG.actividadfisica.app`
+
+1. En tu ordenador (o donde tengas Node): entra en `frontend/`, crea
+   un `.env` con `VITE_API_URL=https://api.actividadfisica.app`, y
+   ejecuta `npm install && npm run build`. Esto genera `frontend/dist/`.
+2. Crea el subdominio `sEMG.actividadfisica.app` en Plesk como
+   **sitio estático** (sin Python).
+3. Sube el **contenido** de `frontend/dist/` (no la carpeta en sí) a
+   la raíz de ese subdominio (`httpdocs`).
+
+Con esto, el frontend en `sEMG.actividadfisica.app` llamará a la API
+en `api.actividadfisica.app`, y el "Failed to fetch" debería
+desaparecer.

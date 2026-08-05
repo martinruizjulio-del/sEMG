@@ -21,6 +21,18 @@ from app.processing.fatigue import calculate_fatigue
 from app.core.naming import slugify_variable_name
 
 router = APIRouter(prefix="/desktops", tags=["analyze"], dependencies=[Depends(get_current_user)])
+preview_router = APIRouter(tags=["analyze"], dependencies=[Depends(get_current_user)])
+
+
+def _decimate(values: np.ndarray, max_points: int = 1500) -> list:
+    n = len(values)
+    if n == 0:
+        return []
+    if n <= max_points:
+        return [float(v) for v in values]
+    step = n / max_points
+    idx = (np.arange(max_points) * step).astype(int)
+    return [float(v) for v in values[idx]]
 
 
 def _parse_file(filename: str, raw_bytes: bytes):
@@ -161,3 +173,43 @@ async def analyze_file(
         db.commit()
 
     return AnalyzeResponse(fs=fs, n_samples=data.shape[0], channels=channels_out)
+
+
+@preview_router.post("/channel-preview")
+async def channel_preview(
+    channels: str = Form(...),  # JSON: [{"index":0,"sensor_type":"emg"}, ...]
+    rms_num_points: int = Form(51),
+    file: UploadFile = File(...),
+):
+    """Devuelve, para los canales indicados, las tres versiones
+    decimadas (raw / filtrado / RMS) listas para graficar, calculadas
+    UNA sola vez por selección de canal — así el frontend puede
+    cambiar de modo (Raw/Filtrado/RMS) sin volver a subir el archivo."""
+    try:
+        channel_specs = json.loads(channels)
+    except Exception as exc:
+        raise HTTPException(400, f"Parámetro 'channels' inválido: {exc}")
+
+    raw_bytes = await file.read()
+    fs, detected_names, data = _parse_file(file.filename, raw_bytes)
+    if data.ndim == 1:
+        data = data.reshape(-1, 1)
+
+    out = []
+    for spec in channel_specs:
+        index = spec["index"]
+        sensor_type = spec.get("sensor_type", "emg")
+        if index >= data.shape[1]:
+            raise HTTPException(400, f"Canal índice {index} fuera de rango")
+
+        raw_channel = data[:, index]
+        filtered, processed = _processed_signal(raw_channel, sensor_type, fs, rms_num_points)
+
+        out.append({
+            "index": index,
+            "raw": _decimate(raw_channel),
+            "filtered": _decimate(filtered),
+            "rms": _decimate(processed) if sensor_type == "emg" else _decimate(filtered),
+        })
+
+    return {"fs": fs, "channels": out}

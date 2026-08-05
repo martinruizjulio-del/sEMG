@@ -54,6 +54,37 @@ export default function DesktopWorkspace({ desktop }) {
     }
   }
 
+  const [channelPreviews, setChannelPreviews] = useState({}); // { [index]: { raw, filtered, rms } }
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  useEffect(() => {
+    if (!file || channelSelection.length === 0) {
+      setChannelPreviews({});
+      return;
+    }
+    let cancelled = false;
+    setLoadingPreview(true);
+    api
+      .channelPreview(
+        file,
+        channelSelection.map((c) => ({ index: c.index, sensor_type: c.sensor_type }))
+      )
+      .then((data) => {
+        if (cancelled) return;
+        const byIndex = {};
+        data.channels.forEach((ch) => {
+          byIndex[ch.index] = { raw: ch.raw, filtered: ch.filtered, rms: ch.rms };
+        });
+        setChannelPreviews(byIndex);
+      })
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setLoadingPreview(false));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file, JSON.stringify(channelSelection.map((c) => [c.index, c.sensor_type]))]);
+
   async function handleAddSubject(group) {
     const subject = await api.addSubject(desktop.id, group);
     setSubjects((prev) => [...prev, subject]);
@@ -94,10 +125,11 @@ export default function DesktopWorkspace({ desktop }) {
     URL.revokeObjectURL(url);
   }
 
-  const waveformData = channelSelection.map((c) => ({
-    values: preview?.preview?.[c.index] || [],
-    colorClass: `channel-color-${c.index % 8}`,
-  }));
+  const waveformData = channelSelection.map((c) => {
+    const cached = channelPreviews[c.index];
+    const values = cached ? cached[mode] : preview?.preview?.[c.index] || [];
+    return { values, colorClass: `channel-color-${c.index % 8}` };
+  });
 
   return (
     <div className="workspace">
@@ -135,6 +167,7 @@ export default function DesktopWorkspace({ desktop }) {
               {file ? file.name : "Subir archivo (.ASC, .emt, .csv, .txt)"}
             </label>
             <ModeSwitch value={mode} onChange={setMode} />
+            {loadingPreview && <span className="preview-loading mono">calculando…</span>}
           </div>
 
           <WaveformView channelsData={waveformData} />

@@ -40,6 +40,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(desktops.router)
 app.include_router(analyze.router)
+app.include_router(analyze.preview_router)
 
 
 @app.get("/health")
