@@ -1,0 +1,60 @@
+name: Deploy sEMG
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy sEMG
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm install
+
+      - name: Compilar aplicación
+        working-directory: frontend
+        run: npm run build
+
+      - name: Añadir .htaccess para rutas internas
+        run: |
+          cat > frontend/dist/.htaccess <<'EOF'
+          <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /
+
+            RewriteRule ^index\.html$ - [L]
+
+            RewriteCond %{REQUEST_FILENAME} -f [OR]
+            RewriteCond %{REQUEST_FILENAME} -d
+            RewriteRule ^ - [L]
+
+            RewriteRule . /index.html [L]
+          </IfModule>
+          EOF
+
+          echo "Contenido preparado para desplegar:"
+          ls -la frontend/dist
+
+      - name: Desplegar en servidor
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./frontend/dist/
+          server-dir: /sEMG.actividadfisica.app/
+          dangerous-clean-slate: true
