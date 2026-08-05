@@ -1,0 +1,56 @@
+import { useState } from "react";
+import "./DesktopList.css";
+
+export default function DesktopList({ desktops, activeId, onSelect, onCreate }) {
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+
+  function submitCreate(e) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onCreate(name.trim());
+    setName("");
+    setCreating(false);
+  }
+
+  return (
+    <aside className="desktop-list">
+      <div className="desktop-list-header">
+        <span className="desktop-list-brand">
+          <span className="desktop-list-dot" /> sEMG
+        </span>
+      </div>
+
+      <div className="desktop-list-section-label">Escritorios</div>
+
+      <ul>
+        {desktops.map((d) => (
+          <li key={d.id}>
+            <button
+              className={`desktop-item ${d.id === activeId ? "is-active" : ""}`}
+              onClick={() => onSelect(d.id)}
+            >
+              {d.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {creating ? (
+        <form onSubmit={submitCreate} className="desktop-create-form">
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nombre del escritorio"
+            onBlur={() => !name && setCreating(false)}
+          />
+        </form>
+      ) : (
+        <button className="desktop-create-btn" onClick={() => setCreating(true)}>
+          + Nuevo escritorio
+        </button>
+      )}
+    </aside>
+  );
+}

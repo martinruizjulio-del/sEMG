@@ -1,0 +1,43 @@
+.waveform-view {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.waveform-svg {
+  width: 100%;
+  height: 260px;
+  display: block;
+}
+
+.waveform-baseline {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.waveform-trace {
+  fill: none;
+  stroke-width: 1.4;
+  opacity: 0.95;
+}
+
+.waveform-trace.channel-color-0 { stroke: var(--ch-1); filter: drop-shadow(0 0 3px var(--ch-1)); }
+.waveform-trace.channel-color-1 { stroke: var(--ch-2); filter: drop-shadow(0 0 3px var(--ch-2)); }
+.waveform-trace.channel-color-2 { stroke: var(--ch-3); filter: drop-shadow(0 0 3px var(--ch-3)); }
+.waveform-trace.channel-color-3 { stroke: var(--ch-4); filter: drop-shadow(0 0 3px var(--ch-4)); }
+.waveform-trace.channel-color-4 { stroke: var(--ch-5); filter: drop-shadow(0 0 3px var(--ch-5)); }
+.waveform-trace.channel-color-5 { stroke: var(--ch-6); filter: drop-shadow(0 0 3px var(--ch-6)); }
+.waveform-trace.channel-color-6 { stroke: var(--ch-7); filter: drop-shadow(0 0 3px var(--ch-7)); }
+.waveform-trace.channel-color-7 { stroke: var(--ch-8); filter: drop-shadow(0 0 3px var(--ch-8)); }
+
+.waveform-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}

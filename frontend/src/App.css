@@ -1,0 +1,13 @@
+.app-shell {
+  height: 100%;
+  display: flex;
+}
+
+.app-empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}

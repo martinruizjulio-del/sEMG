@@ -1,0 +1,63 @@
+/*
+  Sistema de diseño de sEMG / Matlab_app.
+
+  Dirección: instrumento de laboratorio de electromiografía, no un
+  dashboard SaaS genérico. Fondo casi negro (carcasa de instrumento),
+  acento ámbar cálido (dial analógico) en vez del verde/vermellón
+  neón habitual en fondos oscuros generados por IA. Paleta categórica
+  de canal pensada para convivir sobre el fondo oscuro sin vibrar.
+*/
+
+:root {
+  /* Superficie */
+  --bg: #0a0d12;
+  --surface: #12161d;
+  --surface-raised: #1a2029;
+  --border: #262e3a;
+  --border-strong: #333d4d;
+
+  /* Texto */
+  --text-primary: #e9edf3;
+  --text-secondary: #8b96a8;
+  --text-tertiary: #5c6577;
+
+  /* Acento principal (dial ámbar) */
+  --accent: #e0a03d;
+  --accent-strong: #f0b658;
+  --accent-dim: rgba(224, 160, 61, 0.14);
+
+  /* Estados */
+  --danger: #e0685c;
+  --success: #6bbf8f;
+
+  /* Paleta categórica de canal (líneas de señal) */
+  --ch-1: #4dc9b0; /* teal */
+  --ch-2: #e8735c; /* coral */
+  --ch-3: #d9b64d; /* oro */
+  --ch-4: #9c8ce8; /* violeta */
+  --ch-5: #5fa8d9; /* cielo */
+  --ch-6: #8fbf6b; /* salvia */
+  --ch-7: #d97fb0; /* ciruela */
+  --ch-8: #7d8ba1; /* pizarra */
+
+  /* Tipografía */
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  /* Espaciado */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.channel-color-0 { color: var(--ch-1); }
+.channel-color-1 { color: var(--ch-2); }
+.channel-color-2 { color: var(--ch-3); }
+.channel-color-3 { color: var(--ch-4); }
+.channel-color-4 { color: var(--ch-5); }
+.channel-color-5 { color: var(--ch-6); }
+.channel-color-6 { color: var(--ch-7); }
+.channel-color-7 { color: var(--ch-8); }

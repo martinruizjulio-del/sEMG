@@ -1,0 +1,127 @@
+.login-screen {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(224, 160, 61, 0.08), transparent),
+    var(--bg);
+}
+
+.login-card {
+  position: relative;
+  width: min(420px, 90vw);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  padding: 32px 28px 28px;
+  overflow: hidden;
+}
+
+.login-trace {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 64px;
+  opacity: 0.5;
+}
+
+.login-trace path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 6px rgba(224, 160, 61, 0.55));
+}
+
+.login-wordmark {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.login-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(224, 160, 61, 0.8);
+}
+
+.login-subtitle {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 4px 0 28px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-form label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.login-form input {
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.login-code-input {
+  letter-spacing: 0.4em;
+  font-size: 20px;
+  text-align: center;
+}
+
+.login-form button[type="submit"] {
+  margin-top: 8px;
+  background: var(--accent);
+  color: #1a1305;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 11px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+
+.login-form button[type="submit"]:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.login-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-link {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-decoration: underline;
+  padding: 4px 0;
+}
+
+.login-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin: 14px 0 0;
+}

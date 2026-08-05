@@ -49,10 +49,41 @@ Todos estos módulos se han probado contra `S1_1.ASC`, `S11_1.emt` y
 
 ## Pendiente (siguiente iteración)
 
-- Frontend React (subida de archivos, visualización raw/filtrada/RMS
-  con slider, selección de canales)
+- Wire real de "Filtrado"/"RMS" en el selector de modo del frontend
+  (hoy el interruptor cambia de estado visualmente, pero el gráfico
+  siempre muestra la vista previa cruda decimada; falta que el
+  backend devuelva también la versión filtrada/RMS decimada, o
+  calcularla en el propio frontend a partir de los datos crudos)
+- Slider de segmentación temporal sobre la forma de onda
+- Plantillas de canal desde la UI (el backend ya las soporta)
+- Comparación entre dos archivos (elegir con qué serie quedarse)
+- Ratio bilateral y normalización de activación en la UI
 - Integración opcional con OneDrive (fase 2)
 - Despliegue en sEMG.actividadfisica.app
+
+## Frontend (React + Vite)
+
+Construido y probado (`npm run build` sin errores). Sigue el sistema
+de diseño de un instrumento de laboratorio EMG: fondo casi negro,
+acento ámbar (dial analógico), paleta categórica de 8 colores para
+canales, tipografía Space Grotesk/IBM Plex Sans/IBM Plex Mono.
+
+Pantallas ya funcionales:
+- **Login**: correo + código de 6 cifras, con un trazo EMG animado
+  como apertura.
+- **Escritorios**: barra lateral para crear/abrir escritorios.
+- **Espacio de trabajo**: subir archivo → vista previa de canales
+  detectados → seleccionar canales (lado, tipo de sensor) → elegir
+  cálculos (media/máximo/mediana/picos/frecuencia/fatiga) → analizar
+  y guardar → ver resultados → exportar a `.xlsx`.
+
+```bash
+cd frontend
+npm install
+cp .env.example .env   # ajusta VITE_API_URL si el backend no está en localhost:8000
+npm run dev
+```
+
 
 ## Ya implementado y probado de extremo a extremo
 

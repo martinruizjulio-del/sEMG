@@ -17,6 +17,8 @@ iteración):
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
+import numpy as np
+
 from app.parsers.asc_parser import parse_asc
 from app.parsers.emt_parser import parse_emt
 from app.parsers.csv_txt_parser import parse_tabular
@@ -45,11 +47,24 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/parse-preview")
+from fastapi import Depends
+from app.routers.auth import get_current_user
+
+
+def _decimate(values: np.ndarray, max_points: int = 1500) -> list:
+    n = len(values)
+    if n <= max_points:
+        return [float(v) for v in values]
+    step = n / max_points
+    idx = (np.arange(max_points) * step).astype(int)
+    return [float(v) for v in values[idx]]
+
+
+@app.post("/parse-preview", dependencies=[Depends(get_current_user)])
 async def parse_preview(file: UploadFile = File(...)):
-    """Endpoint de prueba: sube un archivo y devuelve metadatos detectados
-    (canales, fs, nº de muestras) sin guardar nada, para validar el parser
-    contra archivos reales antes de construir el resto del flujo."""
+    """Sube un archivo y devuelve metadatos (canales, fs, nº de muestras)
+    más una vista previa decimada por canal, lista para graficar en el
+    frontend sin tener que mandar todas las muestras."""
     raw_bytes = await file.read()
     try:
         text = raw_bytes.decode("utf-8-sig")
@@ -59,27 +74,28 @@ async def parse_preview(file: UploadFile = File(...)):
 
     if name.endswith(".asc"):
         parsed = parse_asc(text)
-        return {
-            "format": "asc",
-            "fs": parsed.fs,
-            "channels": parsed.channel_names,
-            "n_samples": parsed.data.shape[0],
-            "n_channels": parsed.data.shape[1] if parsed.data.ndim > 1 else 1,
-        }
-    if name.endswith(".emt"):
+        fs, channels, data = parsed.fs, parsed.channel_names, parsed.data
+        fmt = "asc"
+    elif name.endswith(".emt"):
         parsed = parse_emt(text)
-        return {
-            "format": "emt",
-            "fs": parsed.fs,
-            "channels": parsed.channel_names,
-            "n_samples": parsed.data_uv.shape[0],
-            "n_channels": parsed.data_uv.shape[1],
-        }
-    # csv / txt genérico
-    parsed = parse_tabular(text)
+        fs, channels, data = parsed.fs, parsed.channel_names, parsed.data_uv
+        fmt = "emt"
+    else:
+        parsed = parse_tabular(text)
+        fs, channels, data = 1000.0, parsed.column_names, parsed.data
+        fmt = "tabular"
+
+    if data.ndim == 1:
+        data = data.reshape(-1, 1)
+
+    max_channels_preview = 8
+    preview = [_decimate(data[:, c]) for c in range(min(data.shape[1], max_channels_preview))]
+
     return {
-        "format": "tabular",
-        "channels": parsed.column_names,
-        "n_samples": parsed.data.shape[0],
-        "n_channels": parsed.data.shape[1],
+        "format": fmt,
+        "fs": fs,
+        "channels": channels,
+        "n_samples": data.shape[0],
+        "n_channels": data.shape[1],
+        "preview": preview,
     }
