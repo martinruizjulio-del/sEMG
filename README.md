@@ -51,9 +51,6 @@ Todos estos módulos se han probado contra `S1_1.ASC`, `S11_1.emt` y
 
 - Frontend React (subida de archivos, visualización raw/filtrada/RMS
   con slider, selección de canales)
-- Endpoint de análisis que conecte parsers+processing con los
-  escritorios/sujetos (hoy son módulos independientes ya probados;
-  falta el endpoint que los orquesta y guarda resultados en BD)
 - Integración opcional con OneDrive (fase 2)
 - Despliegue en sEMG.actividadfisica.app
 
@@ -73,11 +70,22 @@ Todos estos módulos se han probado contra `S1_1.ASC`, `S11_1.emt` y
   especiales (`app/core/naming.py`).
 - **Exportación a Excel**: `GET /desktops/{id}/export` genera un
   `.xlsx` real con una fila por sujeto y una columna por variable.
+- **Análisis end-to-end**: `POST /desktops/{id}/subjects/{subject_id}/analyze`
+  — subes un archivo (.ASC/.emt/.csv/.txt), indicas qué canales y qué
+  cálculos quieres (media, máximo, mediana, picos, frecuencia, fatiga),
+  y aplica el pipeline correcto según el tipo de sensor: para EMG,
+  frecuencia dominante y fatiga se calculan sobre la señal filtrada
+  (no sobre la envolvente RMS, que al ser siempre positiva distorsiona
+  el contenido espectral); media/máximo/mediana/picos se calculan
+  sobre la envolvente RMS, igual que en Slider.m. El archivo subido
+  nunca se guarda en disco, solo vive en memoria durante la petición.
 
 Probado con un test end-to-end: pedir código → verificar → crear
-escritorio → crear 2 sujetos (uno control, uno experimental) → guardar
-un resultado → exportar → el `.xlsx` resultante contiene exactamente
-lo esperado.
+escritorio → crear 2 sujetos (uno control, uno experimental) → subir
+`S1_1.ASC` real y analizarlo (media/máximo/picos/frecuencia/fatiga) →
+comprobar que los resultados se guardan → exportar → el `.xlsx`
+resultante contiene exactamente los valores calculados con sus nombres
+de variable generados automáticamente.
 
 ## Variables de entorno (backend/.env)
 
