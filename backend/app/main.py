@@ -22,7 +22,7 @@ from app.parsers.emt_parser import parse_emt
 from app.parsers.csv_txt_parser import parse_tabular
 from app.db.session import Base, engine
 from app.db import models  # noqa: F401 (registra los modelos en Base)
-from app.routers import auth, desktops
+from app.routers import auth, desktops, analyze
 
 Base.metadata.create_all(bind=engine)
 
@@ -37,6 +37,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(desktops.router)
+app.include_router(analyze.router)
 
 
 @app.get("/health")
