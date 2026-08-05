@@ -215,3 +215,23 @@ al mismo origen, en vez de a `localhost:8000`.
 Cada vez que cambies el frontend, repite el paso 1 (recompilar y
 copiar a `backend/static/`) y vuelve a subir esa carpeta.
 
+
+## Alternativa: desplegar en Render (si tu Plesk no tiene Python)
+
+Si tu hosting Plesk no ofrece la extensión de Python (algunos planes
+no la incluyen y depende del proveedor activarla), la alternativa más
+simple es Render (tiene plan gratuito y corre Python de forma nativa,
+sin necesidad de `passenger_wsgi.py`/`a2wsgi`):
+
+1. `cd frontend && npm install && npm run build && cp -r dist ../backend/static`
+2. Sube `backend/static/` al repo de GitHub.
+3. En [render.com](https://render.com), inicia sesión con GitHub y
+   crea un **Web Service** apuntando al repo, con:
+   - Root Directory: `backend`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - Variables de entorno: `ALLOWED_EMAIL`, `JWT_SECRET`,
+     `DATABASE_URL=sqlite:///./dev.db`, `RESEND_API_KEY` (opcional)
+4. Cuando funcione en la URL `.onrender.com`, puedes apuntar tu
+   subdominio `smeg.actividadfisica.app` a Render con un registro
+   CNAME (Render te da la URL exacta en su panel, en "Custom Domains").
