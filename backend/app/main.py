@@ -1,21 +1,24 @@
 """
-Esqueleto de la API de Matlab_app.
+API de Matlab_app + frontend servido desde el mismo proceso.
 
-Endpoints previstos (a implementar con base de datos real en la siguiente
-iteración):
-  POST /auth/request-code   -> envía código de 6 cifras al correo autorizado
-  POST /auth/verify-code    -> valida código y devuelve sesión/token
-  GET  /desktops            -> lista escritorios guardados del usuario
-  POST /desktops            -> crea un escritorio nuevo (con nombre)
-  POST /desktops/{id}/files -> sube archivo(s) / carpeta a un escritorio
-  POST /desktops/{id}/analyze -> ejecuta filtros/RMS/picos/FFT/fatiga sobre
-                                  los archivos del escritorio, según los
-                                  cálculos seleccionados
-  GET  /desktops/{id}/export -> exporta la matriz de datos del escritorio
-                                  a hoja de cálculo (.xlsx)
+Para desplegar en un ÚNICO subdominio (Plesk/Passenger no permite
+fácilmente proxys internos entre un sitio estático y una app Python),
+el propio backend sirve también el frontend ya compilado:
+copia el contenido de `frontend/dist/` a `backend/static/` antes de
+desplegar, y este archivo lo servirá automáticamente en "/".
+
+Rutas de la API (todas bajo estos prefijos, el resto de rutas
+devuelve el frontend):
+  POST /auth/request-code, /auth/verify-code
+  GET/POST /desktops, /desktops/{id}, /desktops/{id}/subjects, ...
+  POST /parse-preview, /channel-preview
+  GET  /health
 """
-from fastapi import FastAPI, UploadFile, File
+import os
+
+from fastapi import FastAPI, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 import numpy as np
 
@@ -25,6 +28,7 @@ from app.parsers.csv_txt_parser import parse_tabular
 from app.db.session import Base, engine
 from app.db import models  # noqa: F401 (registra los modelos en Base)
 from app.routers import auth, desktops, analyze
+from app.routers.auth import get_current_user
 
 Base.metadata.create_all(bind=engine)
 
@@ -32,7 +36,7 @@ app = FastAPI(title="Matlab_app API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ajustar en producción a sEMG.actividadfisica.app
+    allow_origins=["*"],  # mismo origen en producción; permisivo para desarrollo local
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -46,10 +50,6 @@ app.include_router(analyze.preview_router)
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-
-from fastapi import Depends
-from app.routers.auth import get_current_user
 
 
 def _decimate(values: np.ndarray, max_points: int = 1500) -> list:
@@ -100,3 +100,11 @@ async def parse_preview(file: UploadFile = File(...)):
         "n_channels": data.shape[1],
         "preview": preview,
     }
+
+
+# --- Servir el frontend compilado (debe ir al final: las rutas de la
+# API de arriba se comprueban primero; esto solo captura lo que no
+# haya coincidido con ninguna ruta de la API) ---
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+if os.path.isdir(STATIC_DIR):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="frontend")

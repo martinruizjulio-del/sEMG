@@ -163,45 +163,55 @@ git remote add origin https://github.com/martinruizjulio-del/sEMG.git
 git push -u origin main
 ```
 
-## Desplegar en Plesk
+## Desplegar en Plesk (un único subdominio)
 
-Este proyecto necesita **dos sitios/apps separados** en Plesk — no
-funciona como un único despliegue:
-
-### 1. Backend en `api.actividadfisica.app`
+Backend y frontend viven en **un solo subdominio** (p.ej.
+`smeg.actividadfisica.app`): el propio backend Python sirve también
+el frontend ya compilado desde `backend/static/`, así que solo hace
+falta configurar **una** app en Plesk. Mismo origen = sin CORS que
+gestionar.
 
 Plesk usa Phusion Passenger, que sirve apps **WSGI** (Flask/Django).
 FastAPI es **ASGI**, así que se incluye `backend/passenger_wsgi.py`
 que adapta la app con `a2wsgi`.
 
-1. Crea el subdominio `api.actividadfisica.app` en Plesk.
-2. En la ficha del dominio, activa **Python** (icono "Python").
-3. **Application Root**: `backend` (la carpeta, no la raíz del repo).
-4. **Application Startup File**: `passenger_wsgi.py`
-5. **Application Entry point**: `application`
-6. Sube el código (Git o gestor de archivos) y pulsa **Run pip install**
+### 1. Compila el frontend y cópialo dentro del backend
+
+En tu ordenador (con Node instalado):
+
+```bash
+cd frontend
+npm install
+npm run build          # genera frontend/dist/
+cp -r dist ../backend/static
+```
+
+**No definas `VITE_API_URL`** al compilar para producción (déjalo sin
+`.env`, o vacío) — así el frontend llama a la API con rutas relativas
+al mismo origen, en vez de a `localhost:8000`.
+
+### 2. Sube `backend/` (ya con `static/` dentro) al subdominio
+
+1. En Plesk, en la ficha de `smeg.actividadfisica.app`, activa
+   **Python** (icono "Python").
+2. **Application Root**: `backend` (debe contener ya la carpeta
+   `static/` con el frontend compilado dentro).
+3. **Application Startup File**: `passenger_wsgi.py`
+4. **Application Entry point**: `application`
+5. Sube el código (Git o gestor de archivos) y pulsa **Run pip install**
    (usa `requirements.txt`, ya incluye `a2wsgi`).
-7. En **Variables de entorno** de la app Python, añade:
+6. En **Variables de entorno** de la app Python, añade:
    ```
    ALLOWED_EMAIL=tu-correo@ejemplo.com
    JWT_SECRET=<genera uno largo y aleatorio>
    DATABASE_URL=sqlite:///./dev.db
    RESEND_API_KEY=<opcional, si quieres emails reales>
    ```
-8. Reinicia la app Python desde Plesk.
-9. Comprueba que `https://api.actividadfisica.app/health` responde
-   `{"status":"ok"}`.
+7. Reinicia la app Python desde Plesk.
+8. Comprueba `https://smeg.actividadfisica.app/health` → debe
+   responder `{"status":"ok"}`, y `https://smeg.actividadfisica.app/`
+   debe cargar la app (pantalla de login).
 
-### 2. Frontend en `sEMG.actividadfisica.app`
+Cada vez que cambies el frontend, repite el paso 1 (recompilar y
+copiar a `backend/static/`) y vuelve a subir esa carpeta.
 
-1. En tu ordenador (o donde tengas Node): entra en `frontend/`, crea
-   un `.env` con `VITE_API_URL=https://api.actividadfisica.app`, y
-   ejecuta `npm install && npm run build`. Esto genera `frontend/dist/`.
-2. Crea el subdominio `sEMG.actividadfisica.app` en Plesk como
-   **sitio estático** (sin Python).
-3. Sube el **contenido** de `frontend/dist/` (no la carpeta en sí) a
-   la raíz de ese subdominio (`httpdocs`).
-
-Con esto, el frontend en `sEMG.actividadfisica.app` llamará a la API
-en `api.actividadfisica.app`, y el "Failed to fetch" debería
-desaparecer.
