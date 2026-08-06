@@ -8,6 +8,7 @@ import ResultsPanel from "./ResultsPanel";
 import SessionHistory from "./SessionHistory";
 import SegmentSlider from "./SegmentSlider";
 import BatchImport from "./BatchImport";
+import SequentialMode from "./SequentialMode";
 import "./DesktopWorkspace.css";
 
 export default function DesktopWorkspace({ desktop }) {
@@ -26,6 +27,7 @@ export default function DesktopWorkspace({ desktop }) {
   const [analyzeResult, setAnalyzeResult] = useState(null);
   const [error, setError] = useState("");
   const [resultsRefreshKey, setResultsRefreshKey] = useState(0);
+  const [showSequential, setShowSequential] = useState(false);
 
   // Picos colocados manualmente en el gráfico (estilo Slider.m):
   // { [channelIndex]: [tiempo_ms, ...] }. Solo un canal puede estar
@@ -250,13 +252,24 @@ export default function DesktopWorkspace({ desktop }) {
             onChangePeakConfig={setPeakConfig}
           />
 
-          <button
-            className="workspace-btn-primary analyze-btn"
-            onClick={handleAnalyze}
-            disabled={!file || channelSelection.length === 0 || !activeSubjectId || analyzing}
-          >
-            {analyzing ? "Analizando…" : "Analizar y guardar"}
-          </button>
+          <div className="analyze-row">
+            <button
+              className="workspace-btn-primary analyze-btn"
+              onClick={handleAnalyze}
+              disabled={!file || channelSelection.length === 0 || !activeSubjectId || analyzing}
+            >
+              {analyzing ? "Analizando…" : "Analizar y guardar"}
+            </button>
+            <button
+              type="button"
+              className="workspace-btn-ghost"
+              onClick={() => setShowSequential(true)}
+              disabled={!analyzeResult}
+              title={!analyzeResult ? "Analiza primero para poder mostrarlo paso a paso" : "Mostrar paso a paso en clase"}
+            >
+              🎓 Modo secuencial (clase)
+            </button>
+          </div>
 
           {error && <p className="workspace-error">{error}</p>}
 
@@ -289,6 +302,16 @@ export default function DesktopWorkspace({ desktop }) {
       </div>
 
       <SessionHistory desktopId={desktop.id} subjects={subjects} refreshKey={resultsRefreshKey} />
+
+      {showSequential && (
+        <SequentialMode
+          channelSelection={channelSelection}
+          channelPreviews={channelPreviews}
+          analyzeResult={analyzeResult}
+          totalDurationMs={totalDurationMs}
+          onClose={() => setShowSequential(false)}
+        />
+      )}
     </div>
   );
 }

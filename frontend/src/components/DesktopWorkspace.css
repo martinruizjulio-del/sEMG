@@ -120,6 +120,12 @@
   color: var(--accent);
 }
 
+.analyze-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .analyze-btn {
   align-self: flex-start;
   padding: 10px 20px;
