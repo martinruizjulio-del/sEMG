@@ -7,6 +7,7 @@ import CalculationPanel from "./CalculationPanel";
 import ResultsPanel from "./ResultsPanel";
 import SessionHistory from "./SessionHistory";
 import SegmentSlider from "./SegmentSlider";
+import BatchImport from "./BatchImport";
 import "./DesktopWorkspace.css";
 
 export default function DesktopWorkspace({ desktop }) {
@@ -258,6 +259,18 @@ export default function DesktopWorkspace({ desktop }) {
           </button>
 
           {error && <p className="workspace-error">{error}</p>}
+
+          <BatchImport
+            desktopId={desktop.id}
+            channelSelection={channelSelection}
+            calculations={calculations}
+            peakConfig={peakConfig}
+            disabled={!preview}
+            onDone={() => {
+              loadSubjects();
+              setResultsRefreshKey((k) => k + 1);
+            }}
+          />
         </div>
 
         <aside className="workspace-sidebar">
