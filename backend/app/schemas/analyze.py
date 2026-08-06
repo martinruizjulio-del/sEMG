@@ -23,7 +23,7 @@ class AnalyzeRequest(BaseModel):
     channels: list[ChannelSelection]  # qué canales analizar y cómo tratarlos
     calculations: list[Literal[
         "media", "maximo", "mediana", "picos", "frecuencia", "fatiga",
-        "ratio_bilateral", "normalizacion",
+        "ratio_bilateral", "normalizacion", "orden_activacion",
     ]]
     peak_config: Optional[PeakConfig] = None
     rms_num_points: int = 51

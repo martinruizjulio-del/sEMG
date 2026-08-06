@@ -197,6 +197,7 @@ async def analyze_file(
 
         channel_records.append({
             "index": ch.index, "label": label, "side": ch.side, "metrics": metrics,
+            "peak_times_ms": peak_times,
         })
         channels_out.append(ChannelAnalysisOut(
             channel_label=label,
@@ -215,6 +216,9 @@ async def analyze_file(
 
     if "normalizacion" in request.calculations:
         _add_activation_normalization(channel_records)
+
+    if "orden_activacion" in request.calculations:
+        _add_activation_order(channel_records)
 
     # --- Generar nombres de variable definitivos y guardar en BD ---
 
@@ -300,6 +304,21 @@ def _add_activation_normalization(channel_records: list[dict]) -> None:
             continue
         for rec, v in values:
             rec["metrics"][f"pct_activacion_{metric_name}"] = (abs(v) / total) * 100.0
+
+
+def _add_activation_order(channel_records: list[dict]) -> None:
+    """Orden de activación: 1 para el canal que activa primero (pico
+    más temprano), 2 para el siguiente, etc. -como una jerarquía en
+    Excel-. Necesita que 'Picos' también esté seleccionado; los
+    canales sin ningún pico detectado no reciben orden."""
+    candidates = [
+        (rec, min(rec["peak_times_ms"]))
+        for rec in channel_records
+        if rec.get("peak_times_ms")
+    ]
+    candidates.sort(key=lambda item: item[1])
+    for rank, (rec, _first_peak_ms) in enumerate(candidates, start=1):
+        rec["metrics"]["orden_activacion"] = float(rank)
 
 
 @preview_router.post("/channel-preview")

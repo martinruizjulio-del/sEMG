@@ -9,6 +9,7 @@ const CALCS = [
   { value: "fatiga", label: "Fatiga" },
   { value: "ratio_bilateral", label: "Ratio bilateral (R/L)" },
   { value: "normalizacion", label: "Normalización de activación (%)" },
+  { value: "orden_activacion", label: "Orden de activación" },
 ];
 
 export default function CalculationPanel({ calculations, onChangeCalculations, peakConfig, onChangePeakConfig }) {
@@ -67,13 +68,16 @@ export default function CalculationPanel({ calculations, onChangeCalculations, p
           </label>
         </div>
       )}
-      {(calculations.includes("ratio_bilateral") || calculations.includes("normalizacion")) && (
+      {(calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("orden_activacion")) && (
         <p className="calc-hint">
           {calculations.includes("ratio_bilateral") && (
             <>Ratio bilateral: necesita al menos un canal marcado como "Derecho (R)" y otro como "Izquierdo (L)" del mismo músculo, y que Media, Máximo o Mediana también estén marcados. </>
           )}
           {calculations.includes("normalizacion") && (
-            <>Normalización: reparte el % entre todos los canales seleccionados para Media, Máximo o Mediana.</>
+            <>Normalización: reparte el % entre todos los canales seleccionados para Media, Máximo o Mediana. </>
+          )}
+          {calculations.includes("orden_activacion") && (
+            <>Orden de activación: necesita que "Picos" también esté marcado -usa el primer pico de cada canal para ordenarlos-.</>
           )}
         </p>
       )}
