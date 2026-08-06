@@ -231,7 +231,24 @@ sin necesidad de `passenger_wsgi.py`/`a2wsgi`):
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
    - Variables de entorno: `ALLOWED_EMAIL`, `JWT_SECRET`,
-     `DATABASE_URL=sqlite:///./dev.db`, `RESEND_API_KEY` (opcional)
+     `DATABASE_URL` (ver aviso abajo), `RESEND_API_KEY`, `EMAIL_FROM`
 4. Cuando funcione en la URL `.onrender.com`, puedes apuntar tu
    subdominio `smeg.actividadfisica.app` a Render con un registro
    CNAME (Render te da la URL exacta en su panel, en "Custom Domains").
+
+**Aviso — no uses SQLite en Render**: el disco de Render (plan
+gratuito) es efímero, así que `DATABASE_URL=sqlite:///./dev.db` pierde
+todos los datos (escritorios, sujetos, resultados) en cada reinicio o
+despliegue. Usa en su lugar una base de datos Postgres persistente
+gratuita:
+
+1. Crea una cuenta en [neon.tech](https://neon.tech) (gratis, sin
+   tarjeta; los datos no caducan, aunque el cómputo "duerme" tras
+   inactividad y se despierta solo en la siguiente consulta).
+2. Crea un proyecto → copia la cadena de conexión (`postgresql://...`).
+3. Ponla como `DATABASE_URL` en las variables de entorno de Render.
+   `psycopg2-binary` ya está en `requirements.txt`, así que no hace
+   falta nada más — las tablas se crean solas en el primer arranque
+   (`Base.metadata.create_all` en `app/main.py`).
+
+
