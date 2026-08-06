@@ -114,6 +114,20 @@ async def analyze_file(
     if data.ndim == 1:
         data = data.reshape(-1, 1)
 
+    # Segmentación visual: recortar al tramo elegido ANTES de procesar
+    # cualquier canal (todos los cálculos -media, picos, fatiga...- se
+    # hacen ya solo sobre ese tramo).
+    segment_offset_ms = 0.0
+    if request.segment_start_ms is not None or request.segment_end_ms is not None:
+        total_ms = (data.shape[0] / fs) * 1000.0
+        start_ms = max(0.0, request.segment_start_ms or 0.0)
+        end_ms = min(total_ms, request.segment_end_ms if request.segment_end_ms is not None else total_ms)
+        start_idx = int((start_ms / 1000.0) * fs)
+        end_idx = int((end_ms / 1000.0) * fs)
+        if end_idx > start_idx:
+            data = data[start_idx:end_idx, :]
+            segment_offset_ms = start_ms
+
     channels_out: list[ChannelAnalysisOut] = []
     # Guardamos aparte los datos crudos necesarios para los cálculos
     # ENTRE canales (ratio bilateral, normalización), que solo se
@@ -148,8 +162,12 @@ async def analyze_file(
             elif calc == "picos":
                 if ch.manual_peaks_ms:
                     # Posicionamiento manual directo (estilo Slider.m):
-                    # el usuario ya marcó los picos en el gráfico.
-                    manual_indices = [int(round((t_ms / 1000.0) * fs)) for t_ms in ch.manual_peaks_ms]
+                    # el usuario ya marcó los picos en el gráfico
+                    # -sobre la señal completa-, así que se ajustan al
+                    # desplazamiento si se ha recortado un segmento.
+                    manual_indices = [
+                        int(round(((t_ms - segment_offset_ms) / 1000.0) * fs)) for t_ms in ch.manual_peaks_ms
+                    ]
                     manual_indices = [i for i in manual_indices if 0 <= i < len(processed)]
                     result = manual_peaks(processed, fs=fs, indices=manual_indices)
                 else:

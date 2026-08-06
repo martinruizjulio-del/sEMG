@@ -6,6 +6,7 @@ import WaveformView from "./WaveformView";
 import CalculationPanel from "./CalculationPanel";
 import ResultsPanel from "./ResultsPanel";
 import SessionHistory from "./SessionHistory";
+import SegmentSlider from "./SegmentSlider";
 import "./DesktopWorkspace.css";
 
 export default function DesktopWorkspace({ desktop }) {
@@ -30,6 +31,11 @@ export default function DesktopWorkspace({ desktop }) {
   // "activo" para recibir clics a la vez.
   const [manualPeaks, setManualPeaks] = useState({});
   const [manualPeakActiveIndex, setManualPeakActiveIndex] = useState(null);
+
+  // Segmentación visual: qué tramo de la señal se analiza (0..1 del
+  // total). Por defecto, la señal completa.
+  const [segmentStart, setSegmentStart] = useState(0);
+  const [segmentEnd, setSegmentEnd] = useState(1);
 
   const loadSubjects = useCallback(async () => {
     const list = await api.listSubjects(desktop.id);
@@ -59,6 +65,8 @@ export default function DesktopWorkspace({ desktop }) {
       setChannelSelection([]);
       setManualPeaks({});
       setManualPeakActiveIndex(null);
+      setSegmentStart(0);
+      setSegmentEnd(1);
     } catch (err) {
       setError(err.message);
     }
@@ -135,6 +143,8 @@ export default function DesktopWorkspace({ desktop }) {
         calculations,
         peak_config: peakConfig,
         save_results: true,
+        segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
+        segment_end_ms: segmentEnd < 1 ? segmentEnd * totalDurationMs : null,
       };
       const result = await api.analyze(desktop.id, activeSubjectId, file, config);
       setAnalyzeResult(result);
@@ -209,7 +219,21 @@ export default function DesktopWorkspace({ desktop }) {
                 ? (manualPeaks[manualPeakActiveIndex] || []).map((t) => t / totalDurationMs)
                 : []
             }
+            segmentStartFraction={segmentStart}
+            segmentEndFraction={segmentEnd}
           />
+
+          {preview && (
+            <SegmentSlider
+              startFraction={segmentStart}
+              endFraction={segmentEnd}
+              totalDurationMs={totalDurationMs}
+              onChange={(start, end) => {
+                setSegmentStart(start);
+                setSegmentEnd(end);
+              }}
+            />
+          )}
 
           {preview && (
             <div className="preview-meta mono">

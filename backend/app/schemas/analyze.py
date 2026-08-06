@@ -29,6 +29,11 @@ class AnalyzeRequest(BaseModel):
     rms_num_points: int = 51
     save_results: bool = True
     session_label: Optional[str] = None  # si no se da, se usa el nombre del archivo subido
+    # Segmentación visual: analizar solo este tramo de la señal (ms,
+    # relativo al inicio del archivo completo). Si no se da, se usa
+    # todo el archivo.
+    segment_start_ms: Optional[float] = None
+    segment_end_ms: Optional[float] = None
 
 
 class ChannelAnalysisOut(BaseModel):

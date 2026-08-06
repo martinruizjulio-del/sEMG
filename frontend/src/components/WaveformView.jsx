@@ -16,6 +16,8 @@ export default function WaveformView({
   height = 260,
   onManualPeakClick,
   manualPeakFractions = [],
+  segmentStartFraction = 0,
+  segmentEndFraction = 1,
 }) {
   const width = 1000;
   const svgRef = useRef(null);
@@ -61,6 +63,18 @@ export default function WaveformView({
         {paths.map((p, i) => (
           <path key={i} d={p.d} className={`waveform-trace ${p.colorClass}`} />
         ))}
+        {segmentStartFraction > 0 && (
+          <rect x="0" y="0" width={segmentStartFraction * width} height={height} className="waveform-dim" />
+        )}
+        {segmentEndFraction < 1 && (
+          <rect
+            x={segmentEndFraction * width}
+            y="0"
+            width={(1 - segmentEndFraction) * width}
+            height={height}
+            className="waveform-dim"
+          />
+        )}
         {manualPeakFractions.map((f, i) => (
           <line key={i} x1={f * width} y1="0" x2={f * width} y2={height} className="waveform-manual-peak" />
         ))}
