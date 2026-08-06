@@ -25,8 +25,12 @@ bearer_scheme = HTTPBearer()
 
 @router.post("/request-code")
 def request_code(payload: RequestCodeIn, db: Session = Depends(get_db)):
-    if payload.email.lower() != settings.allowed_email.lower():
-        # No revelamos si el correo es válido o no, para no dar pistas.
+    if payload.email.strip().lower() != settings.allowed_email.strip().lower():
+        # No revelamos si el correo es válido o no, para no dar pistas
+        # al exterior — pero sí lo dejamos en los logs del servidor,
+        # para poder diagnosticar por qué "no llega el código" sin
+        # tener que adivinar (p. ej. ALLOWED_EMAIL mal puesto en Plesk).
+        print(f"[auth] Intento de acceso con correo no autorizado: {payload.email!r}")
         return {"detail": "Si el correo es válido, recibirás un código."}
 
     code = generate_6_digit_code()

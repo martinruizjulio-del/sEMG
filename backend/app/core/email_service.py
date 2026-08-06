@@ -10,10 +10,12 @@ def send_access_code(email: str, code: str) -> None:
 
     Si no hay RESEND_API_KEY configurada (desarrollo local), simplemente
     lo imprime en consola para poder probar el flujo sin enviar emails
-    reales.
+    reales. Ojo: si esto ocurre en producción normalmente significa que
+    falta configurar RESEND_API_KEY en las variables de entorno del
+    servidor — revisa los logs si "no llega el código".
     """
     if not settings.resend_api_key:
-        print(f"[DEV] Código de acceso para {email}: {code}")
+        print(f"[auth][AVISO] RESEND_API_KEY no configurada: código para {email} solo impreso, no enviado por correo: {code}")
         return
 
     response = httpx.post(
