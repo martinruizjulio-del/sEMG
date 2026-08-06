@@ -50,6 +50,13 @@ def parse_tabular(raw_text: str, has_header: bool = True) -> TabularFile:
         delimiter=delimiter,
         header=0 if has_header else None,
         engine="python",
+        # Crítico: sin esto, si una fila tiene más campos que la
+        # cabecera (p.ej. por un ';' o '\t' sobrante al final de cada
+        # línea, algo habitual en exportaciones de equipos EMG), pandas
+        # asume que el primer campo es un índice sin nombre y desplaza
+        # TODO el resto de columnas una posición -de forma silenciosa,
+        # sin ningún aviso-. index_col=False evita ese desplazamiento.
+        index_col=False,
     )
 
     # Normalizar cada columna a numérico (maneja coma o punto decimal)

@@ -106,7 +106,11 @@ def apply_filter(data: np.ndarray, spec: FilterSpec) -> np.ndarray:
     tiempo-. El filtro EMG se mantiene de una sola pasada (sosfilt),
     igual que Filtro_emg.m.
     """
-    data = _clean_nan(data) if spec.channel_type == "force_platform" else data
+    # Limpieza de NaN: pequeños huecos de grabación pueden aparecer en
+    # cualquier tipo de sensor, no solo en plataformas de fuerza -se
+    # interpolan linealmente antes de filtrar, para no romper el
+    # filtro ni la envolvente RMS-.
+    data = _clean_nan(data)
     sos = design_filter(spec)
     if sos is None:
         return data

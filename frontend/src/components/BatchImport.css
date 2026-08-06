@@ -18,6 +18,25 @@
   line-height: 1.5;
 }
 
+.batch-import-window-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.batch-import-window-input {
+  width: 70px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
 .batch-import-controls {
   display: flex;
   flex-wrap: wrap;
