@@ -7,6 +7,8 @@ const CALCS = [
   { value: "picos", label: "Picos" },
   { value: "frecuencia", label: "Frecuencia dominante" },
   { value: "fatiga", label: "Fatiga" },
+  { value: "ratio_bilateral", label: "Ratio bilateral (R/L)" },
+  { value: "normalizacion", label: "Normalización de activación (%)" },
 ];
 
 export default function CalculationPanel({ calculations, onChangeCalculations, peakConfig, onChangePeakConfig }) {
@@ -64,6 +66,16 @@ export default function CalculationPanel({ calculations, onChangeCalculations, p
             />
           </label>
         </div>
+      )}
+      {(calculations.includes("ratio_bilateral") || calculations.includes("normalizacion")) && (
+        <p className="calc-hint">
+          {calculations.includes("ratio_bilateral") && (
+            <>Ratio bilateral: necesita al menos un canal marcado como "Derecho (R)" y otro como "Izquierdo (L)" del mismo músculo, y que Media, Máximo o Mediana también estén marcados. </>
+          )}
+          {calculations.includes("normalizacion") && (
+            <>Normalización: reparte el % entre todos los canales seleccionados para Media, Máximo o Mediana.</>
+          )}
+        </p>
       )}
     </div>
   );

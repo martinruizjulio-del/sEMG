@@ -17,3 +17,18 @@ def slugify_variable_name(*parts: str) -> str:
     cleaned = re.sub(r"[^0-9a-zA-Z]+", "_", no_accents)
     cleaned = re.sub(r"_+", "_", cleaned).strip("_")
     return cleaned
+
+
+_SIDE_WORDS = re.compile(
+    r"\s*[\(\[]?\b(right|left|derecho|derecha|izquierdo|izquierda|[rl])\b[\)\]]?\s*",
+    re.IGNORECASE,
+)
+
+
+def base_muscle_name(label: str) -> str:
+    """Quita cualquier mención al lado (Right/Left/Derecho/Izquierdo/R/L)
+    del nombre de un canal, para poder emparejar 'Biceps femoris Right'
+    con 'Biceps femoris Left' como el mismo grupo muscular. Usado para
+    ratio bilateral."""
+    cleaned = _SIDE_WORDS.sub(" ", label)
+    return re.sub(r"\s+", " ", cleaned).strip()

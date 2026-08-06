@@ -18,7 +18,12 @@ from app.processing.rms import rms_emg
 from app.processing.peaks import detect_peaks, PeakParams
 from app.processing.frequency import dominant_frequency
 from app.processing.fatigue import calculate_fatigue
-from app.core.naming import slugify_variable_name
+from app.core.naming import slugify_variable_name, base_muscle_name
+
+# Métricas de amplitud sobre las que tiene sentido calcular ratio
+# bilateral y normalización de activación (no aplica a frecuencia,
+# fatiga, nº de picos o lapso).
+_AMPLITUDE_METRICS = {"media", "maximo", "mediana"}
 
 router = APIRouter(prefix="/desktops", tags=["analyze"], dependencies=[Depends(get_current_user)])
 preview_router = APIRouter(tags=["analyze"], dependencies=[Depends(get_current_user)])
@@ -110,6 +115,10 @@ async def analyze_file(
         data = data.reshape(-1, 1)
 
     channels_out: list[ChannelAnalysisOut] = []
+    # Guardamos aparte los datos crudos necesarios para los cálculos
+    # ENTRE canales (ratio bilateral, normalización), que solo se
+    # pueden hacer una vez conocidos los valores de TODOS los canales.
+    channel_records: list[dict] = []
 
     peak_cfg = request.peak_config
     min_dist_samples = None
@@ -158,21 +167,12 @@ async def analyze_file(
                 fat = calculate_fatigue(processed_filtered, fs=fs)
                 metrics["fatiga_pendiente_hz_s"] = fat.slope_hz_per_s
                 metrics["fatiga_indice_pct"] = fat.fatigue_index_pct
+            # "ratio_bilateral" y "normalizacion" se calculan aparte, más
+            # abajo, una vez conocidos los valores de todos los canales.
 
-        for metric_name, value in metrics.items():
-            var_name = slugify_variable_name(label, ch.side or "", metric_name)
-            variable_names[metric_name] = var_name
-            if request.save_results:
-                db.add(AnalysisResult(
-                    subject_id=subject_id,
-                    session_id=session.id,
-                    variable_name=var_name,
-                    channel_label=label,
-                    metric=metric_name,
-                    value=float(value),
-                    unit=None,
-                ))
-
+        channel_records.append({
+            "index": ch.index, "label": label, "side": ch.side, "metrics": metrics,
+        })
         channels_out.append(ChannelAnalysisOut(
             channel_label=label,
             side=ch.side,
@@ -180,8 +180,45 @@ async def analyze_file(
             metrics=metrics,
             peak_indices=peak_indices,
             peak_times_ms=peak_times,
-            variable_names=variable_names,
+            variable_names=variable_names,  # se rellena más abajo, tras añadir los derivados
         ))
+
+    # --- Cálculos ENTRE canales (necesitan los valores de todos) ---
+
+    if "ratio_bilateral" in request.calculations:
+        _add_bilateral_ratios(channel_records)
+
+    if "normalizacion" in request.calculations:
+        _add_activation_normalization(channel_records)
+
+    # --- Generar nombres de variable definitivos y guardar en BD ---
+
+    saved_variable_names: set[str] = set()
+    for rec, ch_out in zip(channel_records, channels_out):
+        for metric_name, value in rec["metrics"].items():
+            if metric_name.startswith("ratio_bilateral_"):
+                # Valor compartido por el par R/L: un nombre de variable
+                # único (sin lado) y se guarda una sola vez, no por cada
+                # canal del par.
+                var_name = slugify_variable_name(base_muscle_name(rec["label"]), metric_name)
+                dedupe_key = var_name
+            else:
+                var_name = slugify_variable_name(rec["label"], rec["side"] or "", metric_name)
+                dedupe_key = f"{rec['index']}:{var_name}"
+
+            ch_out.variable_names[metric_name] = var_name
+            if request.save_results and dedupe_key not in saved_variable_names:
+                saved_variable_names.add(dedupe_key)
+                db.add(AnalysisResult(
+                    subject_id=subject_id,
+                    session_id=session.id,
+                    variable_name=var_name,
+                    channel_label=base_muscle_name(rec["label"]) if metric_name.startswith("ratio_bilateral_") else rec["label"],
+                    metric=metric_name,
+                    value=float(value),
+                    unit=None,
+                ))
+        ch_out.metrics = rec["metrics"]  # incluye ya los derivados (ratio_bilateral_*, pct_activacion_*)
 
     if request.save_results:
         db.commit()
@@ -193,6 +230,51 @@ async def analyze_file(
         session_id=session.id if session else None,
         session_label=session.label if session else None,
     )
+
+
+def _add_bilateral_ratios(channel_records: list[dict]) -> None:
+    """Para cada par de canales del mismo grupo muscular (mismo nombre
+    base, uno R y otro L), añade 'ratio_bilateral_<metrica>' = R / L a
+    AMBOS canales del par, para cada métrica de amplitud presente en
+    los dos (media/máximo/mediana)."""
+    by_base: dict[str, dict[str, dict]] = {}
+    for rec in channel_records:
+        if rec["side"] not in ("R", "L"):
+            continue
+        base = base_muscle_name(rec["label"])
+        by_base.setdefault(base, {})[rec["side"]] = rec
+
+    for base, sides in by_base.items():
+        if "R" not in sides or "L" not in sides:
+            continue  # solo se puede calcular si están los dos lados
+        rec_r, rec_l = sides["R"], sides["L"]
+        shared_metrics = _AMPLITUDE_METRICS & set(rec_r["metrics"]) & set(rec_l["metrics"])
+        for metric_name in shared_metrics:
+            val_r, val_l = rec_r["metrics"][metric_name], rec_l["metrics"][metric_name]
+            if val_l == 0:
+                continue  # evitar división por cero
+            ratio = val_r / val_l
+            rec_r["metrics"][f"ratio_bilateral_{metric_name}"] = ratio
+            rec_l["metrics"][f"ratio_bilateral_{metric_name}"] = ratio
+
+
+def _add_activation_normalization(channel_records: list[dict]) -> None:
+    """Para cada métrica de amplitud, calcula qué % representa cada
+    canal sobre el total sumado entre TODOS los canales analizados en
+    este archivo -normalización de activación-."""
+    for metric_name in _AMPLITUDE_METRICS:
+        values = [
+            (rec, rec["metrics"][metric_name])
+            for rec in channel_records
+            if metric_name in rec["metrics"]
+        ]
+        if len(values) < 2:
+            continue  # no tiene sentido normalizar un único canal
+        total = sum(abs(v) for _, v in values)
+        if total == 0:
+            continue
+        for rec, v in values:
+            rec["metrics"][f"pct_activacion_{metric_name}"] = (abs(v) / total) * 100.0
 
 
 @preview_router.post("/channel-preview")

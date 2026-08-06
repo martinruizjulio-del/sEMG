@@ -20,7 +20,10 @@ class PeakConfig(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     channels: list[ChannelSelection]  # qué canales analizar y cómo tratarlos
-    calculations: list[Literal["media", "maximo", "mediana", "picos", "frecuencia", "fatiga"]]
+    calculations: list[Literal[
+        "media", "maximo", "mediana", "picos", "frecuencia", "fatiga",
+        "ratio_bilateral", "normalizacion",
+    ]]
     peak_config: Optional[PeakConfig] = None
     rms_num_points: int = 51
     save_results: bool = True
