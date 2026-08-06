@@ -31,11 +31,15 @@ function AppShell() {
 
   const activeDesktop = desktops.find((d) => d.id === activeId);
 
+  function handleDesktopUpdated(updated) {
+    setDesktops((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+  }
+
   return (
     <div className="app-shell">
       <DesktopList desktops={desktops} activeId={activeId} onSelect={setActiveId} onCreate={handleCreate} />
       {activeDesktop ? (
-        <DesktopWorkspace key={activeDesktop.id} desktop={activeDesktop} />
+        <DesktopWorkspace key={activeDesktop.id} desktop={activeDesktop} onDesktopUpdated={handleDesktopUpdated} />
       ) : (
         <div className="app-empty-state">
           {loaded ? "Crea un escritorio nuevo para empezar." : "Cargando…"}

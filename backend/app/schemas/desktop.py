@@ -21,6 +21,10 @@ class DesktopOut(BaseModel):
         from_attributes = True
 
 
+class DesktopUpdate(BaseModel):
+    edit_link_url: Optional[str] = None
+
+
 class SubjectCreate(BaseModel):
     group: Literal["control", "experimental"] = "experimental"
 

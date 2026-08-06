@@ -49,6 +49,7 @@ export const api = {
   listDesktops: () => request("/desktops"),
   createDesktop: (payload) => request("/desktops", { method: "POST", json: payload }),
   getDesktop: (id) => request(`/desktops/${id}`),
+  updateDesktop: (id, payload) => request(`/desktops/${id}`, { method: "PATCH", json: payload }),
 
   listSubjects: (desktopId) => request(`/desktops/${desktopId}/subjects`),
   addSubject: (desktopId, group) =>

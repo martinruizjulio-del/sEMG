@@ -12,7 +12,7 @@ from app.db.session import get_db
 from app.db.models import Desktop, Subject, ChannelTemplate, AnalysisSession, AnalysisResult
 from app.routers.auth import get_current_user
 from app.schemas.desktop import (
-    DesktopCreate, DesktopOut,
+    DesktopCreate, DesktopOut, DesktopUpdate,
     SubjectCreate, SubjectOut,
     ChannelTemplateCreate, ChannelTemplateOut,
     AnalysisResultOut, AnalysisResultUpdate,
@@ -40,6 +40,18 @@ def get_desktop(desktop_id: int, db: Session = Depends(get_db)):
     desktop = db.get(Desktop, desktop_id)
     if not desktop:
         raise HTTPException(404, "Escritorio no encontrado")
+    return desktop
+
+
+@router.patch("/{desktop_id}", response_model=DesktopOut)
+def update_desktop(desktop_id: int, payload: DesktopUpdate, db: Session = Depends(get_db)):
+    desktop = db.get(Desktop, desktop_id)
+    if not desktop:
+        raise HTTPException(404, "Escritorio no encontrado")
+    if payload.edit_link_url is not None:
+        desktop.edit_link_url = payload.edit_link_url or None
+    db.commit()
+    db.refresh(desktop)
     return desktop
 
 

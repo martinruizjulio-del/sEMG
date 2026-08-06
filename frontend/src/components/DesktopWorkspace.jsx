@@ -9,9 +9,10 @@ import SessionHistory from "./SessionHistory";
 import SegmentSlider from "./SegmentSlider";
 import BatchImport from "./BatchImport";
 import SequentialMode from "./SequentialMode";
+import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop }) {
+export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
 
@@ -197,6 +198,7 @@ export default function DesktopWorkspace({ desktop }) {
           <button className="workspace-btn-ghost" onClick={() => handleAddSubject("control")}>
             + Control
           </button>
+          <ExternalLink desktop={desktop} onUpdated={onDesktopUpdated} />
           <button className="workspace-btn-primary" onClick={handleExport}>
             Exportar .xlsx
           </button>

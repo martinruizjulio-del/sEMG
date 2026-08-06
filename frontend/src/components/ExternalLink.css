@@ -1,0 +1,42 @@
+.external-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.external-link-open {
+  color: var(--accent);
+  font-size: 13px;
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius-sm);
+}
+
+.external-link-open:hover {
+  border-color: var(--accent);
+}
+
+.external-link-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+.external-link-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.external-link-edit input {
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  min-width: 220px;
+}
