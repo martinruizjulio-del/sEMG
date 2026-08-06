@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import "./DesktopList.css";
 
 export default function DesktopList({ desktops, activeId, onSelect, onCreate }) {
+  const { logout } = useAuth();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
 
@@ -19,6 +21,13 @@ export default function DesktopList({ desktops, activeId, onSelect, onCreate }) 
         <span className="desktop-list-brand">
           <span className="desktop-list-dot" /> sEMG
         </span>
+      </div>
+
+      <div className="desktop-list-greeting">
+        <span>¡Hola Julio!</span>
+        <button className="desktop-list-logout" onClick={logout} title="Cerrar sesión">
+          Salir
+        </button>
       </div>
 
       <div className="desktop-list-section-label">Escritorios</div>
