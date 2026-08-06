@@ -10,6 +10,7 @@ class ChannelSelection(BaseModel):
     label: Optional[str] = None  # si no se da, se usa el nombre detectado en el archivo
     side: Optional[Literal["R", "L"]] = None
     sensor_type: Literal["emg", "accelerometer", "force_platform", "raw"] = "emg"
+    manual_peaks_ms: Optional[list[float]] = None  # posicionamiento manual directo (estilo Slider.m)
 
 
 class PeakConfig(BaseModel):

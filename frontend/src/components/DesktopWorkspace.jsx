@@ -25,6 +25,12 @@ export default function DesktopWorkspace({ desktop }) {
   const [error, setError] = useState("");
   const [resultsRefreshKey, setResultsRefreshKey] = useState(0);
 
+  // Picos colocados manualmente en el gráfico (estilo Slider.m):
+  // { [channelIndex]: [tiempo_ms, ...] }. Solo un canal puede estar
+  // "activo" para recibir clics a la vez.
+  const [manualPeaks, setManualPeaks] = useState({});
+  const [manualPeakActiveIndex, setManualPeakActiveIndex] = useState(null);
+
   const loadSubjects = useCallback(async () => {
     const list = await api.listSubjects(desktop.id);
     setSubjects(list);
@@ -51,6 +57,8 @@ export default function DesktopWorkspace({ desktop }) {
       const data = await api.parsePreview(f);
       setPreview(data);
       setChannelSelection([]);
+      setManualPeaks({});
+      setManualPeakActiveIndex(null);
     } catch (err) {
       setError(err.message);
     }
@@ -93,6 +101,25 @@ export default function DesktopWorkspace({ desktop }) {
     setActiveSubjectId(subject.id);
   }
 
+  const totalDurationMs = preview ? (preview.n_samples / preview.fs) * 1000 : 0;
+
+  function handleManualPeakClick(fraction) {
+    if (manualPeakActiveIndex === null) return;
+    const timeMs = fraction * totalDurationMs;
+    setManualPeaks((prev) => {
+      const current = prev[manualPeakActiveIndex] || [];
+      return { ...prev, [manualPeakActiveIndex]: [...current, timeMs].sort((a, b) => a - b) };
+    });
+  }
+
+  function handleClearManualPeaks(index) {
+    setManualPeaks((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+  }
+
   async function handleAnalyze() {
     if (!file || !activeSubjectId || channelSelection.length === 0) return;
     setAnalyzing(true);
@@ -103,6 +130,7 @@ export default function DesktopWorkspace({ desktop }) {
           index: c.index,
           side: c.side,
           sensor_type: c.sensor_type,
+          manual_peaks_ms: manualPeaks[c.index]?.length ? manualPeaks[c.index] : null,
         })),
         calculations,
         peak_config: peakConfig,
@@ -173,7 +201,15 @@ export default function DesktopWorkspace({ desktop }) {
             {loadingPreview && <span className="preview-loading mono">calculando…</span>}
           </div>
 
-          <WaveformView channelsData={waveformData} />
+          <WaveformView
+            channelsData={waveformData}
+            onManualPeakClick={manualPeakActiveIndex !== null ? handleManualPeakClick : undefined}
+            manualPeakFractions={
+              manualPeakActiveIndex !== null && totalDurationMs > 0
+                ? (manualPeaks[manualPeakActiveIndex] || []).map((t) => t / totalDurationMs)
+                : []
+            }
+          />
 
           {preview && (
             <div className="preview-meta mono">
@@ -205,6 +241,11 @@ export default function DesktopWorkspace({ desktop }) {
             channels={preview?.channels || []}
             selection={channelSelection}
             onChange={setChannelSelection}
+            calculationsIncludePicos={calculations.includes("picos")}
+            manualPeaks={manualPeaks}
+            manualPeakActiveIndex={manualPeakActiveIndex}
+            onSetManualPeakActive={setManualPeakActiveIndex}
+            onClearManualPeaks={handleClearManualPeaks}
           />
           <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
         </aside>

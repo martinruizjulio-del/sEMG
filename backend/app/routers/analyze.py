@@ -15,7 +15,7 @@ from app.parsers.emt_parser import parse_emt
 from app.parsers.csv_txt_parser import parse_tabular
 from app.processing.filters import FilterSpec, apply_filter
 from app.processing.rms import rms_emg
-from app.processing.peaks import detect_peaks, PeakParams
+from app.processing.peaks import detect_peaks, manual_peaks, PeakParams
 from app.processing.frequency import dominant_frequency
 from app.processing.fatigue import calculate_fatigue
 from app.core.naming import slugify_variable_name, base_muscle_name
@@ -146,12 +146,19 @@ async def analyze_file(
             elif calc == "mediana":
                 metrics["mediana"] = float(np.median(processed))
             elif calc == "picos":
-                params = PeakParams(
-                    n_peaks=peak_cfg.n_peaks if peak_cfg else None,
-                    min_peak_height=peak_cfg.min_peak_height if peak_cfg else None,
-                    min_peak_distance_samples=min_dist_samples,
-                )
-                result = detect_peaks(processed, fs=fs, params=params)
+                if ch.manual_peaks_ms:
+                    # Posicionamiento manual directo (estilo Slider.m):
+                    # el usuario ya marcó los picos en el gráfico.
+                    manual_indices = [int(round((t_ms / 1000.0) * fs)) for t_ms in ch.manual_peaks_ms]
+                    manual_indices = [i for i in manual_indices if 0 <= i < len(processed)]
+                    result = manual_peaks(processed, fs=fs, indices=manual_indices)
+                else:
+                    params = PeakParams(
+                        n_peaks=peak_cfg.n_peaks if peak_cfg else None,
+                        min_peak_height=peak_cfg.min_peak_height if peak_cfg else None,
+                        min_peak_distance_samples=min_dist_samples,
+                    )
+                    result = detect_peaks(processed, fs=fs, params=params)
                 peak_indices = result.indices.tolist()
                 peak_times = result.times_ms.tolist()
                 metrics["num_picos"] = len(peak_indices)

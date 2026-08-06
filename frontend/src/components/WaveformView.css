@@ -41,3 +41,25 @@
   color: var(--text-tertiary);
   font-size: 13px;
 }
+
+.waveform-svg.is-clickable {
+  cursor: crosshair;
+}
+
+.waveform-manual-peak {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 3 2;
+}
+
+.waveform-manual-hint {
+  position: absolute;
+  bottom: 6px;
+  left: 10px;
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-dim);
+}

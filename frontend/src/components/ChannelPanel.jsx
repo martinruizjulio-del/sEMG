@@ -18,7 +18,16 @@ function detectSensorType(label) {
   return "emg";
 }
 
-export default function ChannelPanel({ channels, selection, onChange }) {
+export default function ChannelPanel({
+  channels,
+  selection,
+  onChange,
+  calculationsIncludePicos = false,
+  manualPeaks = {},
+  manualPeakActiveIndex = null,
+  onSetManualPeakActive,
+  onClearManualPeaks,
+}) {
   function updateChannel(index, patch) {
     onChange(selection.map((c) => (c.index === index ? { ...c, ...patch } : c)));
   }
@@ -75,6 +84,26 @@ export default function ChannelPanel({ channels, selection, onChange }) {
                     <option value="force_platform">Plataforma de fuerza</option>
                     <option value="raw">Sin filtrar</option>
                   </select>
+                  {calculationsIncludePicos && (
+                    <div className="channel-manual-peaks">
+                      <button
+                        type="button"
+                        className={`channel-manual-btn ${manualPeakActiveIndex === index ? "is-active" : ""}`}
+                        onClick={() => onSetManualPeakActive(manualPeakActiveIndex === index ? null : index)}
+                        title="Colocar picos manualmente haciendo clic en el gráfico"
+                      >
+                        {manualPeakActiveIndex === index ? "Colocando…" : "Manual"}
+                      </button>
+                      {(manualPeaks[index]?.length || 0) > 0 && (
+                        <>
+                          <span className="channel-manual-count">{manualPeaks[index].length} picos</span>
+                          <button type="button" className="channel-manual-clear" onClick={() => onClearManualPeaks(index)}>
+                            Limpiar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </li>
