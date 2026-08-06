@@ -56,6 +56,9 @@ class ChannelTemplateOut(BaseModel):
 
 class AnalysisResultOut(BaseModel):
     id: int
+    subject_id: int
+    session_id: Optional[int]
+    session_label: Optional[str] = None
     variable_name: str
     channel_label: str
     metric: str
@@ -65,3 +68,7 @@ class AnalysisResultOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AnalysisResultUpdate(BaseModel):
+    include_in_matrix: bool

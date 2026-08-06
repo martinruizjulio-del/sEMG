@@ -55,6 +55,11 @@ export const api = {
     request(`/desktops/${desktopId}/subjects`, { method: "POST", json: { group } }),
 
   listResults: (desktopId) => request(`/desktops/${desktopId}/results`),
+  updateResult: (desktopId, resultId, includeInMatrix) =>
+    request(`/desktops/${desktopId}/results/${resultId}`, {
+      method: "PATCH",
+      json: { include_in_matrix: includeInMatrix },
+    }),
 
   exportDesktop: (desktopId) => request(`/desktops/${desktopId}/export`),
 

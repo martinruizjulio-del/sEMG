@@ -146,6 +146,12 @@ async def analyze_file(
                 peak_indices = result.indices.tolist()
                 peak_times = result.times_ms.tolist()
                 metrics["num_picos"] = len(peak_indices)
+                # Lapso: diferencia entre el pico más tardío y el más
+                # temprano DENTRO de este archivo (no compara con otros
+                # archivos -eso se decide luego, al elegir qué sesión
+                # incluir en la matriz de datos final-).
+                if peak_times:
+                    metrics["lapso_ms"] = max(peak_times) - min(peak_times)
             elif calc == "frecuencia":
                 metrics["frecuencia_dominante_hz"] = dominant_frequency(processed_filtered, fs=fs)
             elif calc == "fatiga":

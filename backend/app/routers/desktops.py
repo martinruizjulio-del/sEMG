@@ -9,13 +9,13 @@ from sqlalchemy.orm import Session
 from openpyxl import Workbook
 
 from app.db.session import get_db
-from app.db.models import Desktop, Subject, ChannelTemplate, AnalysisResult
+from app.db.models import Desktop, Subject, ChannelTemplate, AnalysisSession, AnalysisResult
 from app.routers.auth import get_current_user
 from app.schemas.desktop import (
     DesktopCreate, DesktopOut,
     SubjectCreate, SubjectOut,
     ChannelTemplateCreate, ChannelTemplateOut,
-    AnalysisResultOut,
+    AnalysisResultOut, AnalysisResultUpdate,
 )
 
 router = APIRouter(prefix="/desktops", tags=["desktops"], dependencies=[Depends(get_current_user)])
@@ -88,13 +88,61 @@ def list_channel_templates(desktop_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{desktop_id}/results", response_model=list[AnalysisResultOut])
 def list_results(desktop_id: int, db: Session = Depends(get_db)):
-    results = (
-        db.query(AnalysisResult)
+    rows = (
+        db.query(AnalysisResult, AnalysisSession.label)
         .join(Subject, AnalysisResult.subject_id == Subject.id)
+        .outerjoin(AnalysisSession, AnalysisResult.session_id == AnalysisSession.id)
         .filter(Subject.desktop_id == desktop_id)
+        .order_by(AnalysisResult.subject_id, AnalysisResult.session_id)
         .all()
     )
-    return results
+    out = []
+    for result, session_label in rows:
+        out.append(AnalysisResultOut(
+            id=result.id,
+            subject_id=result.subject_id,
+            session_id=result.session_id,
+            session_label=session_label,
+            variable_name=result.variable_name,
+            channel_label=result.channel_label,
+            metric=result.metric,
+            value=result.value,
+            unit=result.unit,
+            include_in_matrix=result.include_in_matrix,
+        ))
+    return out
+
+
+@router.patch("/{desktop_id}/results/{result_id}", response_model=AnalysisResultOut)
+def update_result(desktop_id: int, result_id: int, payload: AnalysisResultUpdate, db: Session = Depends(get_db)):
+    """Marca si este resultado concreto entra en la matriz de datos
+    exportada (p.ej. para elegir, entre dos sesiones del mismo sujeto
+    con la misma variable, cuál de las dos se queda -según el lapso
+    u otro criterio que decida quien analiza-)."""
+    result = (
+        db.query(AnalysisResult)
+        .join(Subject, AnalysisResult.subject_id == Subject.id)
+        .filter(AnalysisResult.id == result_id, Subject.desktop_id == desktop_id)
+        .first()
+    )
+    if not result:
+        raise HTTPException(404, "Resultado no encontrado en este escritorio")
+    result.include_in_matrix = payload.include_in_matrix
+    db.commit()
+    db.refresh(result)
+    session_label = db.get(AnalysisSession, result.session_id).label if result.session_id else None
+    return AnalysisResultOut(
+        id=result.id,
+        subject_id=result.subject_id,
+        session_id=result.session_id,
+        session_label=session_label,
+        variable_name=result.variable_name,
+        channel_label=result.channel_label,
+        metric=result.metric,
+        value=result.value,
+        unit=result.unit,
+        include_in_matrix=result.include_in_matrix,
+    )
 
 
 @router.get("/{desktop_id}/export")

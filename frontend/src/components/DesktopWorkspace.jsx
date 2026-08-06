@@ -5,6 +5,7 @@ import ModeSwitch from "./ModeSwitch";
 import WaveformView from "./WaveformView";
 import CalculationPanel from "./CalculationPanel";
 import ResultsPanel from "./ResultsPanel";
+import SessionHistory from "./SessionHistory";
 import "./DesktopWorkspace.css";
 
 export default function DesktopWorkspace({ desktop }) {
@@ -22,6 +23,7 @@ export default function DesktopWorkspace({ desktop }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState(null);
   const [error, setError] = useState("");
+  const [resultsRefreshKey, setResultsRefreshKey] = useState(0);
 
   const loadSubjects = useCallback(async () => {
     const list = await api.listSubjects(desktop.id);
@@ -108,6 +110,7 @@ export default function DesktopWorkspace({ desktop }) {
       };
       const result = await api.analyze(desktop.id, activeSubjectId, file, config);
       setAnalyzeResult(result);
+      setResultsRefreshKey((k) => k + 1);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -206,6 +209,8 @@ export default function DesktopWorkspace({ desktop }) {
           <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
         </aside>
       </div>
+
+      <SessionHistory desktopId={desktop.id} subjects={subjects} refreshKey={resultsRefreshKey} />
     </div>
   );
 }
