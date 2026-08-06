@@ -203,7 +203,7 @@ export default function DesktopWorkspace({ desktop }) {
             selection={channelSelection}
             onChange={setChannelSelection}
           />
-          <ResultsPanel channels={analyzeResult?.channels} />
+          <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
         </aside>
       </div>
     </div>

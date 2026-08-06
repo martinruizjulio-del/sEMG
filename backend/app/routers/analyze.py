@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.db.models import Subject, AnalysisResult
+from app.db.models import Subject, AnalysisSession, AnalysisResult
 from app.routers.auth import get_current_user
 from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse, ChannelAnalysisOut
 from app.parsers.asc_parser import parse_asc
@@ -99,6 +99,13 @@ async def analyze_file(
     # El archivo original NUNCA se guarda en disco: solo vive en memoria
     # durante esta petición y se descarta al terminar (según lo pedido).
 
+    session = None
+    if request.save_results:
+        default_label = file.filename.rsplit(".", 1)[0] if file.filename else "Análisis"
+        session = AnalysisSession(subject_id=subject_id, label=request.session_label or default_label)
+        db.add(session)
+        db.flush()  # asigna session.id sin cerrar la transacción
+
     if data.ndim == 1:
         data = data.reshape(-1, 1)
 
@@ -152,6 +159,7 @@ async def analyze_file(
             if request.save_results:
                 db.add(AnalysisResult(
                     subject_id=subject_id,
+                    session_id=session.id,
                     variable_name=var_name,
                     channel_label=label,
                     metric=metric_name,
@@ -172,7 +180,13 @@ async def analyze_file(
     if request.save_results:
         db.commit()
 
-    return AnalyzeResponse(fs=fs, n_samples=data.shape[0], channels=channels_out)
+    return AnalyzeResponse(
+        fs=fs,
+        n_samples=data.shape[0],
+        channels=channels_out,
+        session_id=session.id if session else None,
+        session_label=session.label if session else None,
+    )
 
 
 @preview_router.post("/channel-preview")

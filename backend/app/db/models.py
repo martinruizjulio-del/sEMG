@@ -65,17 +65,35 @@ class Subject(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
 
     desktop: Mapped["Desktop"] = relationship(back_populates="subjects")
+    sessions: Mapped[list["AnalysisSession"]] = relationship(back_populates="subject", cascade="all, delete-orphan")
     results: Mapped[list["AnalysisResult"]] = relationship(back_populates="subject", cascade="all, delete-orphan")
 
 
+class AnalysisSession(Base):
+    """Un análisis concreto (un archivo subido y analizado) para un
+    sujeto. Un mismo sujeto puede tener varias sesiones (varias pruebas),
+    cada una exportada como su propia fila en el Excel."""
+    __tablename__ = "analysis_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    subject_id: Mapped[int] = mapped_column(ForeignKey("subjects.id"))
+    label: Mapped[str] = mapped_column(String(255))  # nombre del archivo analizado, p.ej. "S14_1"
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+    subject: Mapped["Subject"] = relationship(back_populates="sessions")
+    results: Mapped[list["AnalysisResult"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+
+
 class AnalysisResult(Base):
-    """Una variable calculada para un sujeto, lista para exportar a la
-    matriz de datos. El nombre de variable se genera automáticamente
-    (sin espacios ni caracteres especiales)."""
+    """Una variable calculada para una sesión de análisis de un sujeto,
+    lista para exportar a la matriz de datos (una fila por sesión). El
+    nombre de variable se genera automáticamente (sin espacios ni
+    caracteres especiales)."""
     __tablename__ = "analysis_results"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     subject_id: Mapped[int] = mapped_column(ForeignKey("subjects.id"))
+    session_id: Mapped[int | None] = mapped_column(ForeignKey("analysis_sessions.id"), nullable=True)
     variable_name: Mapped[str] = mapped_column(String(255))  # p.ej. "Biceps_R_RMS_media"
     channel_label: Mapped[str] = mapped_column(String(255))
     metric: Mapped[str] = mapped_column(String(50))  # media|max|mediana|pico|frecuencia|fatiga|ratio|pct_activacion
@@ -84,3 +102,4 @@ class AnalysisResult(Base):
     include_in_matrix: Mapped[bool] = mapped_column(Boolean, default=True)
 
     subject: Mapped["Subject"] = relationship(back_populates="results")
+    session: Mapped["AnalysisSession"] = relationship(back_populates="results")

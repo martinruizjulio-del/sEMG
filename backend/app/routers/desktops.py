@@ -100,7 +100,9 @@ def list_results(desktop_id: int, db: Session = Depends(get_db)):
 @router.get("/{desktop_id}/export")
 def export_desktop(desktop_id: int, db: Session = Depends(get_db)):
     """Exporta la matriz de datos del escritorio a .xlsx: una fila por
-    sujeto, una columna por variable (nombre lógico ya generado)."""
+    CADA ANÁLISIS (sesión) de cada sujeto -un mismo sujeto puede
+    aparecer en varias filas si tiene varios archivos analizados-, una
+    columna por variable (nombre lógico ya generado)."""
     desktop = db.get(Desktop, desktop_id)
     if not desktop:
         raise HTTPException(404, "Escritorio no encontrado")
@@ -111,20 +113,26 @@ def export_desktop(desktop_id: int, db: Session = Depends(get_db)):
     variable_names: list[str] = []
     rows: list[dict] = []
     for subject in subjects:
-        row = {"Sujeto": subject.label, "Grupo": subject.group}
-        for result in subject.results:
-            if not result.include_in_matrix:
-                continue
-            row[result.variable_name] = result.value
-            if result.variable_name not in variable_names:
-                variable_names.append(result.variable_name)
-        rows.append(row)
+        sessions = sorted(subject.sessions, key=lambda s: s.created_at)
+        if not sessions:
+            # Sujeto añadido pero sin ningún análisis todavía: que conste igualmente.
+            rows.append({"Sujeto": subject.label, "Grupo": subject.group, "Análisis": ""})
+            continue
+        for session in sessions:
+            row = {"Sujeto": subject.label, "Grupo": subject.group, "Análisis": session.label}
+            for result in session.results:
+                if not result.include_in_matrix:
+                    continue
+                row[result.variable_name] = result.value
+                if result.variable_name not in variable_names:
+                    variable_names.append(result.variable_name)
+            rows.append(row)
 
     wb = Workbook()
     ws = wb.active
     ws.title = desktop.name[:31] or "Datos"
 
-    headers = ["Sujeto", "Grupo"] + variable_names
+    headers = ["Sujeto", "Grupo", "Análisis"] + variable_names
     ws.append(headers)
     for row in rows:
         ws.append([row.get(h, "") for h in headers])

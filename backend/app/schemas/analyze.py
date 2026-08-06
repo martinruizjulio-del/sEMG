@@ -24,6 +24,7 @@ class AnalyzeRequest(BaseModel):
     peak_config: Optional[PeakConfig] = None
     rms_num_points: int = 51
     save_results: bool = True
+    session_label: Optional[str] = None  # si no se da, se usa el nombre del archivo subido
 
 
 class ChannelAnalysisOut(BaseModel):
@@ -40,3 +41,5 @@ class AnalyzeResponse(BaseModel):
     fs: float
     n_samples: int
     channels: list[ChannelAnalysisOut]
+    session_id: Optional[int] = None
+    session_label: Optional[str] = None

@@ -1,6 +1,6 @@
 import "./ResultsPanel.css";
 
-export default function ResultsPanel({ channels }) {
+export default function ResultsPanel({ channels, sessionLabel }) {
   if (!channels || channels.length === 0) {
     return (
       <div className="results-panel results-empty">
@@ -11,7 +11,7 @@ export default function ResultsPanel({ channels }) {
 
   return (
     <div className="results-panel">
-      <h3>Resultados</h3>
+      <h3>Resultados{sessionLabel ? ` · ${sessionLabel}` : ""}</h3>
       {channels.map((ch, i) => (
         <div key={i} className="result-block">
           <div className="result-block-title">

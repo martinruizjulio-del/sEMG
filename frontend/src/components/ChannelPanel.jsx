@@ -1,5 +1,23 @@
 import "./ChannelPanel.css";
 
+// Detecta el lado (derecho/izquierdo) a partir del nombre del canal,
+// tal como lo exportan los equipos EMG habituales
+// (p.ej. "Biceps femoris Right µV", "Vastus lateralis Left µV").
+function detectSide(label) {
+  const l = label.toLowerCase();
+  if (/\bright\b|\bderecho\b|\(r\)/.test(l)) return "R";
+  if (/\bleft\b|\bizquierdo\b|\(l\)/.test(l)) return "L";
+  return null;
+}
+
+// Detecta si el canal es de fuerza (p.ej. "6 Newton") en vez de EMG,
+// para no aplicarle por error el filtrado/RMS pensado para EMG.
+function detectSensorType(label) {
+  const l = label.toLowerCase();
+  if (/newton|\bfuerza\b|\bforce\b/.test(l)) return "force_platform";
+  return "emg";
+}
+
 export default function ChannelPanel({ channels, selection, onChange }) {
   function updateChannel(index, patch) {
     onChange(selection.map((c) => (c.index === index ? { ...c, ...patch } : c)));
@@ -10,12 +28,12 @@ export default function ChannelPanel({ channels, selection, onChange }) {
     if (exists) {
       onChange(selection.filter((c) => c.index !== index));
     } else {
-      onChange([...selection, { index, label, side: null, sensor_type: "emg" }]);
+      onChange([...selection, { index, label, side: detectSide(label), sensor_type: detectSensorType(label) }]);
     }
   }
 
   function selectAll() {
-    onChange(channels.map((label, index) => ({ index, label, side: null, sensor_type: "emg" })));
+    onChange(channels.map((label, index) => ({ index, label, side: detectSide(label), sensor_type: detectSensorType(label) })));
   }
 
   return (

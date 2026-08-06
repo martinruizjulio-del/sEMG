@@ -15,10 +15,12 @@ devuelve el frontend):
   GET  /health
 """
 import os
+import datetime as dt
 
 from fastapi import FastAPI, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import inspect, text as sql_text
 
 import numpy as np
 
@@ -31,6 +33,40 @@ from app.routers import auth, desktops, analyze
 from app.routers.auth import get_current_user
 
 Base.metadata.create_all(bind=engine)
+
+
+def _migrate_add_sessions() -> None:
+    """Migración idempotente para bases de datos que ya existían antes
+    de introducir el concepto de 'sesión de análisis' (varios archivos
+    por sujeto). Se ejecuta en cada arranque; no hace nada si ya está
+    aplicada. Compatible con SQLite (dev) y PostgreSQL (producción)."""
+    inspector = inspect(engine)
+    if "analysis_results" not in inspector.get_table_names():
+        return  # tabla recién creada por create_all, ya incluye session_id
+    existing_cols = {c["name"] for c in inspector.get_columns("analysis_results")}
+    if "session_id" in existing_cols:
+        return  # ya migrado
+
+    with engine.begin() as conn:
+        conn.execute(sql_text("ALTER TABLE analysis_results ADD COLUMN session_id INTEGER"))
+        orphan_subjects = conn.execute(sql_text(
+            "SELECT DISTINCT subject_id FROM analysis_results WHERE session_id IS NULL"
+        )).fetchall()
+        for (subject_id,) in orphan_subjects:
+            conn.execute(sql_text(
+                "INSERT INTO analysis_sessions (subject_id, label, created_at) "
+                "VALUES (:sid, 'Análisis 1', :now)"
+            ), {"sid": subject_id, "now": dt.datetime.utcnow()})
+            session_id = conn.execute(sql_text(
+                "SELECT id FROM analysis_sessions WHERE subject_id = :sid ORDER BY id DESC LIMIT 1"
+            ), {"sid": subject_id}).scalar()
+            conn.execute(sql_text(
+                "UPDATE analysis_results SET session_id = :session_id "
+                "WHERE subject_id = :sid AND session_id IS NULL"
+            ), {"session_id": session_id, "sid": subject_id})
+
+
+_migrate_add_sessions()
 
 app = FastAPI(title="Matlab_app API")
 

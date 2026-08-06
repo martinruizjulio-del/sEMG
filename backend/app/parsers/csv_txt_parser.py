@@ -55,10 +55,19 @@ def parse_tabular(raw_text: str, has_header: bool = True) -> TabularFile:
     # Normalizar cada columna a numérico (maneja coma o punto decimal)
     numeric_cols = {}
     for col in df.columns:
+        col_name = str(col).strip()
+        # Algunos equipos EMG (p.ej. exportaciones tipo "Biceps femoris
+        # Right RMS") ya incluyen su propio RMS precalculado, con muestras
+        # sueltas cada cierto intervalo. La app calcula su propio RMS a
+        # partir de la señal en bruto (ver modo "RMS" en el visor), así
+        # que esa columna sobra como canal independiente -se descarta-,
+        # igual que la columna de "timestamp" (no es una señal).
+        if has_header and (col_name.lower().endswith("rms") or col_name.lower() == "timestamp"):
+            continue
         converted = _to_float_series(df[col])
         # Descartar columnas totalmente vacías / no numéricas / de un solo valor constante NaN
         if converted.notna().sum() > 0:
-            numeric_cols[str(col)] = converted
+            numeric_cols[col_name] = converted
 
     clean_df = pd.DataFrame(numeric_cols)
     return TabularFile(column_names=list(clean_df.columns), data=clean_df.to_numpy())
