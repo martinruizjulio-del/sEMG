@@ -81,7 +81,9 @@ class AnalysisSession(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
 
     subject: Mapped["Subject"] = relationship(back_populates="sessions")
-    results: Mapped[list["AnalysisResult"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+    results: Mapped[list["AnalysisResult"]] = relationship(
+        back_populates="session", cascade="all, delete-orphan", order_by="AnalysisResult.id"
+    )
 
 
 class AnalysisResult(Base):
