@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import datetime as dt
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
@@ -108,6 +109,10 @@ async def analyze_file(
     if request.save_results:
         default_label = file.filename.rsplit(".", 1)[0] if file.filename else "Análisis"
         session = AnalysisSession(subject_id=subject_id, label=request.session_label or default_label)
+        # Marcamos el escritorio como "recién usado" -si no, al entrar
+        # en la app siempre aparecería el último CREADO, no el último
+        # en el que se ha trabajado de verdad-.
+        subject.desktop.updated_at = dt.datetime.utcnow()
         db.add(session)
         db.flush()  # asigna session.id sin cerrar la transacción
 

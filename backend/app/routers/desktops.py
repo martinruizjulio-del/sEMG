@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import datetime as dt
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -66,6 +67,10 @@ def add_subject(desktop_id: int, payload: SubjectCreate, db: Session = Depends(g
 
     subject = Subject(desktop_id=desktop_id, label=label, group=payload.group)
     db.add(subject)
+    # Marcamos el escritorio como "recién usado" -si no, al entrar en
+    # la app siempre aparecería el último CREADO, no el último en el
+    # que se ha trabajado de verdad-.
+    desktop.updated_at = dt.datetime.utcnow()
     db.commit()
     db.refresh(subject)
     return subject

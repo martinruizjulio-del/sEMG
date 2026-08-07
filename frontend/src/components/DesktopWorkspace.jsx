@@ -18,6 +18,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
 
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null); // { fs, channels, preview: [...] }
+  const [parsingFile, setParsingFile] = useState(false);
   const [channelSelection, setChannelSelection] = useState([]);
   const [mode, setMode] = useState("raw");
 
@@ -61,8 +62,10 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
     const f = e.target.files?.[0];
     if (!f) return;
     setFile(f);
+    setPreview(null);
     setError("");
     setAnalyzeResult(null);
+    setParsingFile(true);
     try {
       const data = await api.parsePreview(f);
       setPreview(data);
@@ -72,7 +75,15 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
       setSegmentStart(0);
       setSegmentEnd(1);
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")
+          ? "No se pudo conectar con el servidor. Si llevaba un rato sin usarse, puede tardar hasta 50s en despertar — vuelve a intentarlo en unos segundos."
+          : err.message
+      );
+    } finally {
+      setParsingFile(false);
+      // Permite volver a elegir el MISMO archivo si hace falta reintentar.
+      e.target.value = "";
     }
   }
 
@@ -215,6 +226,12 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
             <ModeSwitch value={mode} onChange={setMode} />
             {loadingPreview && <span className="preview-loading mono">calculando…</span>}
           </div>
+          {parsingFile && (
+            <p className="upload-status mono">
+              Leyendo archivo… si el servidor llevaba un rato sin usarse, puede tardar hasta 50s.
+            </p>
+          )}
+          {error && <p className="workspace-error">{error}</p>}
 
           <WaveformView
             channelsData={waveformData}
@@ -272,8 +289,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
               🎓 Modo secuencial (clase)
             </button>
           </div>
-
-          {error && <p className="workspace-error">{error}</p>}
 
           <BatchImport
             desktopId={desktop.id}
