@@ -5,6 +5,7 @@ import "./SessionHistory.css";
 export default function SessionHistory({ desktopId, subjects, refreshKey }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,42 +45,50 @@ export default function SessionHistory({ desktopId, subjects, refreshKey }) {
   }
 
   return (
-    <div className="session-history">
-      <h3>Historial de análisis</h3>
-      <p className="session-history-hint">
-        Cada archivo analizado queda aquí como una sesión aparte. Desmarca los valores que no quieras
-        que aparezcan en el Excel exportado — por ejemplo, si tienes el mismo dato en dos sesiones y
-        quieres quedarte solo con la del <strong>lapso</strong> más pequeño.
-      </p>
-      {[...bySubject.entries()].map(([subjectId, sessions]) => (
-        <div key={subjectId} className="session-history-subject">
-          <h4>{subjectLabel(subjectId)}</h4>
-          {[...sessions.entries()].map(([sessionKey, session]) => (
-            <div key={sessionKey} className="session-history-session">
-              <div className="session-history-session-label">{session.label}</div>
-              <table className="session-history-table">
-                <tbody>
-                  {session.items.map((r) => (
-                    <tr key={r.id} className={r.metric === "lapso_ms" ? "is-lapso" : ""}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={r.include_in_matrix}
-                          onChange={() => toggle(r)}
-                          title="Incluir en la matriz de datos exportada"
-                        />
-                      </td>
-                      <td>{r.channel_label}</td>
-                      <td className="mono">{r.metric.replace(/_/g, " ")}</td>
-                      <td className="mono">{r.value.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+    <div className={`session-history ${open ? "is-open" : ""}`}>
+      <button type="button" className="session-history-toggle" onClick={() => setOpen((v) => !v)}>
+        <span>Historial de análisis ({results.length} valores guardados)</span>
+        <span className="session-history-chevron">{open ? "▾ ocultar" : "▸ mostrar"}</span>
+      </button>
+
+      {open && (
+        <div className="session-history-body">
+          <p className="session-history-hint">
+            Cada archivo analizado queda aquí como una sesión aparte. Desmarca los valores que no quieras
+            que aparezcan en el Excel exportado — por ejemplo, si tienes el mismo dato en dos sesiones y
+            quieres quedarte solo con la del <strong>lapso</strong> más pequeño.
+          </p>
+          {[...bySubject.entries()].map(([subjectId, sessions]) => (
+            <div key={subjectId} className="session-history-subject">
+              <h4>{subjectLabel(subjectId)}</h4>
+              {[...sessions.entries()].map(([sessionKey, session]) => (
+                <div key={sessionKey} className="session-history-session">
+                  <div className="session-history-session-label">{session.label}</div>
+                  <table className="session-history-table">
+                    <tbody>
+                      {session.items.map((r) => (
+                        <tr key={r.id} className={r.metric === "lapso_ms" ? "is-lapso" : ""}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={r.include_in_matrix}
+                              onChange={() => toggle(r)}
+                              title="Incluir en la matriz de datos exportada"
+                            />
+                          </td>
+                          <td>{r.channel_label}</td>
+                          <td className="mono">{r.metric.replace(/_/g, " ")}</td>
+                          <td className="mono">{r.value.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
             </div>
           ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }

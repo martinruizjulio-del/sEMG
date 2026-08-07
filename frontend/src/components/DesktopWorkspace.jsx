@@ -21,6 +21,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
   const [parsingFile, setParsingFile] = useState(false);
   const [channelSelection, setChannelSelection] = useState([]);
   const [mode, setMode] = useState("raw");
+  const [strokeWidth, setStrokeWidth] = useState(1.4);
 
   const [calculations, setCalculations] = useState(["media", "maximo", "picos"]);
   const [peakConfig, setPeakConfig] = useState({ n_peaks: null, min_peak_distance_ms: null });
@@ -31,6 +32,24 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
   const [resultsRefreshKey, setResultsRefreshKey] = useState(0);
   const [showSequential, setShowSequential] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+
+  function startResizingSidebar(e) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+    function onMove(moveEvent) {
+      const delta = startX - moveEvent.clientX; // arrastrar a la izquierda = agrandar el panel
+      const next = Math.min(640, Math.max(220, startWidth + delta));
+      setSidebarWidth(next);
+    }
+    function onUp() {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }
 
   // Picos colocados manualmente en el gráfico (estilo Slider.m):
   // { [channelIndex]: [tiempo_ms, ...] }. Solo un canal puede estar
@@ -247,7 +266,22 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
             }
             segmentStartFraction={segmentStart}
             segmentEndFraction={segmentEnd}
+            totalDurationMs={totalDurationMs}
+            strokeWidth={strokeWidth}
           />
+
+          <label className="stroke-width-control mono">
+            Grosor de línea
+            <input
+              type="range"
+              min="0.5"
+              max="4"
+              step="0.1"
+              value={strokeWidth}
+              onChange={(e) => setStrokeWidth(Number(e.target.value))}
+            />
+            {strokeWidth.toFixed(1)}
+          </label>
 
           {preview && (
             <SegmentSlider
@@ -308,19 +342,22 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
         </div>
 
         {sidebarOpen && (
-          <aside className="workspace-sidebar">
-            <ChannelPanel
-              channels={preview?.channels || []}
-              selection={channelSelection}
-              onChange={setChannelSelection}
-              calculationsIncludePicos={calculations.includes("picos")}
-              manualPeaks={manualPeaks}
-              manualPeakActiveIndex={manualPeakActiveIndex}
-              onSetManualPeakActive={setManualPeakActiveIndex}
-              onClearManualPeaks={handleClearManualPeaks}
-            />
-            <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
-          </aside>
+          <>
+            <div className="workspace-resize-handle" onMouseDown={startResizingSidebar} title="Arrastra para redimensionar" />
+            <aside className="workspace-sidebar" style={{ flexBasis: sidebarWidth }}>
+              <ChannelPanel
+                channels={preview?.channels || []}
+                selection={channelSelection}
+                onChange={setChannelSelection}
+                calculationsIncludePicos={calculations.includes("picos")}
+                manualPeaks={manualPeaks}
+                manualPeakActiveIndex={manualPeakActiveIndex}
+                onSetManualPeakActive={setManualPeakActiveIndex}
+                onClearManualPeaks={handleClearManualPeaks}
+              />
+              <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
+            </aside>
+          </>
         )}
       </div>
 

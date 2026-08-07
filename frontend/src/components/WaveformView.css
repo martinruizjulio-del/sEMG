@@ -8,7 +8,7 @@
 
 .waveform-svg {
   width: 100%;
-  height: 260px;
+  height: 286px;
   display: block;
 }
 
@@ -19,18 +19,28 @@
 
 .waveform-trace {
   fill: none;
-  stroke-width: 1.4;
   opacity: 0.95;
 }
 
-.waveform-trace.channel-color-0 { stroke: var(--ch-1); filter: drop-shadow(0 0 3px var(--ch-1)); }
-.waveform-trace.channel-color-1 { stroke: var(--ch-2); filter: drop-shadow(0 0 3px var(--ch-2)); }
-.waveform-trace.channel-color-2 { stroke: var(--ch-3); filter: drop-shadow(0 0 3px var(--ch-3)); }
-.waveform-trace.channel-color-3 { stroke: var(--ch-4); filter: drop-shadow(0 0 3px var(--ch-4)); }
-.waveform-trace.channel-color-4 { stroke: var(--ch-5); filter: drop-shadow(0 0 3px var(--ch-5)); }
-.waveform-trace.channel-color-5 { stroke: var(--ch-6); filter: drop-shadow(0 0 3px var(--ch-6)); }
-.waveform-trace.channel-color-6 { stroke: var(--ch-7); filter: drop-shadow(0 0 3px var(--ch-7)); }
-.waveform-trace.channel-color-7 { stroke: var(--ch-8); filter: drop-shadow(0 0 3px var(--ch-8)); }
+.waveform-trace.channel-color-0 { stroke: var(--ch-1); }
+.waveform-trace.channel-color-1 { stroke: var(--ch-2); }
+.waveform-trace.channel-color-2 { stroke: var(--ch-3); }
+.waveform-trace.channel-color-3 { stroke: var(--ch-4); }
+.waveform-trace.channel-color-4 { stroke: var(--ch-5); }
+.waveform-trace.channel-color-5 { stroke: var(--ch-6); }
+.waveform-trace.channel-color-6 { stroke: var(--ch-7); }
+.waveform-trace.channel-color-7 { stroke: var(--ch-8); }
+
+.waveform-axis-title {
+  fill: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.waveform-tick {
+  fill: var(--text-tertiary);
+  font-size: 9px;
+  font-family: var(--font-mono);
+}
 
 .waveform-empty {
   position: absolute;

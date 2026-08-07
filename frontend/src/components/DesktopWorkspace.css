@@ -124,6 +124,19 @@
   margin: 6px 0 0;
 }
 
+.stroke-width-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: -8px;
+}
+
+.stroke-width-control input {
+  width: 120px;
+}
+
 .analyze-row {
   display: flex;
   gap: 8px;
@@ -140,13 +153,66 @@
   font-size: 13px;
 }
 
+.workspace-resize-handle {
+  flex-shrink: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+}
+
+.workspace-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 2px;
+  background: var(--border);
+}
+
+.workspace-resize-handle:hover::after {
+  background: var(--accent);
+}
+
 .workspace-sidebar {
-  flex: 1 1 320px;
-  min-width: 240px;
-  max-width: 480px;
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 640px;
   border-left: 1px solid var(--border);
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .workspace-body {
+    flex-direction: column;
+  }
+
+  .workspace-resize-handle {
+    display: none;
+  }
+
+  .workspace-sidebar {
+    max-width: none;
+    width: 100%;
+    flex-basis: auto !important;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .workspace-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .workspace-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .upload-row {
+    flex-wrap: wrap;
+  }
 }
