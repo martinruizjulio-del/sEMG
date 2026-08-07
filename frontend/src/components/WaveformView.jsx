@@ -27,9 +27,11 @@ function smoothMovingAverage(values, windowSize) {
  * clic añade un pico manual (posicionamiento directo, estilo Slider.m)
  * en la fracción 0..1 del ancho donde se pulsó. `manualPeakFractions`
  * dibuja los picos ya colocados como marcas verticales sencillas.
- * `peakMarkers` (más completo) dibuja además una etiqueta con el
- * músculo y el valor, coloreada como ese canal:
- * [{ fraction, value, label, colorClass }]
+ * `peakMarkers` (más completo) dibuja un punto sobre la curva, en su
+ * altura real, con una etiqueta de músculo y valor coloreada como ese
+ * canal: [{ fraction, value, label, colorClass }]. `activeChannelPosition`
+ * indica qué entrada de channelsData es la que corresponde a esos
+ * picos, para poder situar el punto a la altura correcta.
  */
 export default function WaveformView({
   channelsData,
@@ -37,6 +39,7 @@ export default function WaveformView({
   onManualPeakClick,
   manualPeakFractions = [],
   peakMarkers = [],
+  activeChannelPosition = null,
   segmentStartFraction = 0,
   segmentEndFraction = 1,
   totalDurationMs = 0,
@@ -54,7 +57,7 @@ export default function WaveformView({
 
   const paths = useMemo(() => {
     return channelsData.map(({ values, colorClass }) => {
-      if (!values || values.length === 0) return { d: "", areaD: "", colorClass };
+      if (!values || values.length === 0) return { d: "", areaD: "", colorClass, smoothed: [], min: 0, max: 1 };
       const smoothed = smoothWindow > 1 ? smoothMovingAverage(values, smoothWindow) : values;
       const min = Math.min(...smoothed);
       const max = Math.max(...smoothed);
@@ -76,9 +79,23 @@ export default function WaveformView({
             ` L${points[points.length - 1][0].toFixed(1)},${plotHeight} Z`
           : "";
 
-      return { d, areaD, colorClass };
+      return { d, areaD, colorClass, smoothed, min, max };
     });
   }, [channelsData, plotHeight, smoothWindow]);
+
+  // Altura Y (en el gráfico) de cada pico, calculada sobre la MISMA
+  // curva que se está dibujando -así el punto queda exactamente sobre
+  // la señal, no flotando aparte-.
+  const activeCurve = activeChannelPosition !== null ? paths[activeChannelPosition] : null;
+  const positionedPeaks = peakMarkers.map((p) => {
+    if (!activeCurve || !activeCurve.smoothed?.length) return { ...p, y: plotHeight / 2 };
+    const idx = Math.round(p.fraction * (activeCurve.smoothed.length - 1));
+    const v = activeCurve.smoothed[Math.min(Math.max(idx, 0), activeCurve.smoothed.length - 1)];
+    const span = activeCurve.max - activeCurve.min || 1;
+    const norm = (v - activeCurve.min) / span;
+    const y = plotHeight - norm * (plotHeight - 20) - 10;
+    return { ...p, y };
+  });
 
   function handleClick(e) {
     if (!onManualPeakClick || !svgRef.current) return;
@@ -144,16 +161,16 @@ export default function WaveformView({
           {manualPeakFractions.map((f, i) => (
             <line key={i} x1={f * plotWidth} y1="0" x2={f * plotWidth} y2={plotHeight} className="waveform-manual-peak" />
           ))}
-          {peakMarkers.map((p, i) => {
+          {positionedPeaks.map((p, i) => {
             const x = p.fraction * plotWidth;
-            // Alternar la altura de la etiqueta para que no se solapen
-            // si hay varios picos muy juntos.
-            const labelY = 14 + (i % 3) * 14;
+            // La etiqueta se coloca justo encima del punto; se alterna
+            // un poco la distancia para que no se solapen si hay varios
+            // picos muy juntos en el tiempo.
+            const labelY = p.y - 10 - (i % 3) * 12;
             return (
               <g key={`marker-${i}`} className={p.colorClass}>
-                <line x1={x} y1="0" x2={x} y2={plotHeight} className="waveform-peak-line" />
-                <circle cx={x} cy={labelY} r="2.5" className="waveform-peak-dot" />
-                <text x={x + 6} y={labelY + 3} className="waveform-peak-label">
+                <circle cx={x} cy={p.y} r="4.5" className="waveform-peak-dot" />
+                <text x={x + 7} y={labelY} className="waveform-peak-label">
                   {p.label} · {typeof p.value === "number" ? p.value.toFixed(2) : p.value}
                 </text>
               </g>

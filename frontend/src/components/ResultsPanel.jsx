@@ -54,7 +54,7 @@ function ResultsTable({ channels, columnOrder, onReorder }) {
 }
 
 export default function ResultsPanel({ channels, sessionLabel }) {
-  const [view, setView] = useState("lista"); // "lista" | "tabla"
+  const [view, setView] = useState("tabla"); // "lista" | "tabla"
   const [expanded, setExpanded] = useState(false);
   const [columnOrder, setColumnOrder] = useState([]);
 

@@ -5,13 +5,19 @@
   padding: 16px;
 }
 
-.calc-panel h3 {
-  font-size: 13px;
+.calc-section-label {
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.calc-section-label-picos {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
 }
 
 .calc-grid {
@@ -70,4 +76,10 @@
   font-size: 11px;
   line-height: 1.5;
   color: var(--text-tertiary);
+}
+
+.calc-detect-btn {
+  width: 100%;
+  margin-top: 12px;
+  text-align: center;
 }

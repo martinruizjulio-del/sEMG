@@ -12,6 +12,7 @@ export default function DesktopList({
   onChangeCalculations,
   peakConfig,
   onChangePeakConfig,
+  onDetectPeaks,
 }) {
   const { logout } = useAuth();
   const [creating, setCreating] = useState(false);
@@ -79,6 +80,7 @@ export default function DesktopList({
             onChangeCalculations={onChangeCalculations}
             peakConfig={peakConfig}
             onChangePeakConfig={onChangePeakConfig}
+            onDetectPeaks={onDetectPeaks}
           />
         </div>
       )}

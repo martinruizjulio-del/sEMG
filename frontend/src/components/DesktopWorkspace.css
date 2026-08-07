@@ -130,6 +130,11 @@
   color: var(--accent);
 }
 
+.manual-peak-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
 .center-window-shortcut {
   display: flex;
   align-items: center;
@@ -229,7 +234,7 @@
 }
 
 .workspace-sidebar {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   min-width: 220px;
   max-width: 640px;
   border-left: 1px solid var(--border);

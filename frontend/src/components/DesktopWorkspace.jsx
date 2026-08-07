@@ -11,7 +11,7 @@ import SequentialMode from "./SequentialMode";
 import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig }) {
+export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, detectPeaksSignal }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
 
@@ -55,6 +55,20 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   // "activo" para recibir clics a la vez.
   const [manualPeaks, setManualPeaks] = useState({});
   const [manualPeakActiveIndex, setManualPeakActiveIndex] = useState(null);
+  const [peakHistory, setPeakHistory] = useState([]); // [{ index, previous: number[] }]
+
+  function pushPeakHistory(index, previousArray) {
+    setPeakHistory((prev) => [...prev.slice(-19), { index, previous: previousArray }]);
+  }
+
+  function handleUndoPeak() {
+    setPeakHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setManualPeaks((mp) => ({ ...mp, [last.index]: last.previous }));
+      return prev.slice(0, -1);
+    });
+  }
 
   // Segmentación visual: qué tramo de la señal se analiza (0..1 del
   // total). Por defecto, la señal completa.
@@ -93,6 +107,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
       setChannelSelection([]);
       setManualPeaks({});
       setManualPeakActiveIndex(null);
+      setPeakHistory([]);
       setSegmentStart(0);
       setSegmentEnd(1);
       setZoomedToSegment(false);
@@ -156,8 +171,9 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     const timeMs = zoomedToSegment
       ? (segmentStart + fraction * (segmentEnd - segmentStart)) * totalDurationMs
       : fraction * totalDurationMs;
+    const current = manualPeaks[manualPeakActiveIndex] || [];
+    pushPeakHistory(manualPeakActiveIndex, current);
     setManualPeaks((prev) => {
-      const current = prev[manualPeakActiveIndex] || [];
       // Si el clic cae cerca (±1% del total) de un pico ya colocado,
       // se quita en vez de añadir uno nuevo -así se pueden corregir
       // los picos detectados automáticamente sin tener que limpiarlos
@@ -198,6 +214,14 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     }
   }
 
+  // El botón "Detectar y ajustar picos" vive ahora en la columna
+  // izquierda (dentro del panel de cálculos); avisa aquí mediante un
+  // contador que va subiendo cada vez que se pulsa.
+  useEffect(() => {
+    if (detectPeaksSignal > 0) handleDetectPeaks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detectPeaksSignal]);
+
   // Al activar "Manual" desde el panel de canales (para un único
   // canal), primero se detectan sus picos automáticamente -si no los
   // tenía ya- y luego se deja editar a mano; así siempre se parte de
@@ -230,6 +254,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   }
 
   function handleClearManualPeaks(index) {
+    pushPeakHistory(index, manualPeaks[index] || []);
     setManualPeaks((prev) => {
       const next = { ...prev };
       delete next[index];
@@ -395,6 +420,15 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
               {file ? file.name : "Subir archivo (.ASC, .emt, .csv, .txt)"}
             </label>
             <ModeSwitch value={mode} onChange={setMode} />
+            <button
+              type="button"
+              className="workspace-btn-ghost"
+              onClick={() => setShowSequential(true)}
+              disabled={!analyzeResult}
+              title={!analyzeResult ? "Analiza primero para poder mostrarlo paso a paso" : "Mostrar paso a paso en clase"}
+            >
+              🎓 Modo secuencial
+            </button>
             {loadingPreview && <span className="preview-loading mono">calculando…</span>}
           </div>
           {parsingFile && (
@@ -405,15 +439,31 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           {error && <p className="workspace-error">{error}</p>}
 
           {manualPeakActiveIndex !== null && (
-            <button type="button" className="workspace-btn-ghost exit-manual-btn" onClick={() => setManualPeakActiveIndex(null)}>
-              ✕ Salir de "colocar picos"
-            </button>
+            <div className="manual-peak-toolbar">
+              <button type="button" className="workspace-btn-ghost exit-manual-btn" onClick={() => setManualPeakActiveIndex(null)}>
+                ✕ Salir de "colocar picos"
+              </button>
+              <button
+                type="button"
+                className="workspace-btn-ghost"
+                onClick={handleUndoPeak}
+                disabled={peakHistory.length === 0}
+                title="Deshacer el último pico añadido o quitado"
+              >
+                ↩ Deshacer
+              </button>
+            </div>
           )}
 
           <WaveformView
             channelsData={waveformData}
             onManualPeakClick={manualPeakActiveIndex !== null ? handleManualPeakClick : undefined}
             peakMarkers={peakMarkers}
+            activeChannelPosition={
+              manualPeakActiveIndex === null
+                ? null
+                : channelSelection.findIndex((c) => c.index === manualPeakActiveIndex)
+            }
             segmentStartFraction={zoomedToSegment ? 0 : segmentStart}
             segmentEndFraction={zoomedToSegment ? 1 : segmentEnd}
             totalDurationMs={zoomedToSegment ? (segmentEnd - segmentStart) * totalDurationMs : totalDurationMs}
@@ -470,6 +520,8 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
                   setSegmentEnd(end);
                   setZoomedToSegment(false);
                 }}
+                zoomed={zoomedToSegment}
+                onToggleZoom={() => setZoomedToSegment((v) => !v)}
               />
               <div className="center-window-shortcut mono">
                 <button
@@ -495,16 +547,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             </>
           )}
 
-          {preview && (segmentStart > 0 || segmentEnd < 1) && (
-            <button
-              type="button"
-              className="workspace-btn-ghost"
-              onClick={() => setZoomedToSegment((v) => !v)}
-            >
-              {zoomedToSegment ? "🔍− Ver señal completa" : "🔍+ Ampliar la selección"}
-            </button>
-          )}
-
           {preview && (
             <div className="preview-meta mono">
               fs: {preview.fs} Hz · {preview.n_samples} muestras · {preview.n_channels} canales · formato:{" "}
@@ -512,40 +554,18 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             </div>
           )}
 
-          <div className="analyze-row">
-            <button
-              className="workspace-btn-primary analyze-btn"
-              onClick={handleAnalyze}
-              disabled={!file || channelSelection.length === 0 || !activeSubjectId || analyzing}
-            >
-              {analyzing ? "Analizando…" : "Analizar y guardar"}
-            </button>
-            {calculations.includes("picos") && (
-              <button
-                type="button"
-                className="workspace-btn-ghost"
-                onClick={handleDetectPeaks}
-                disabled={!file || channelSelection.length === 0}
-                title="Detecta los picos automáticamente y los muestra en el gráfico para poder ajustarlos a mano, sin guardar todavía"
-              >
-                🎯 Detectar y ajustar picos
-              </button>
-            )}
-            <button
-              type="button"
-              className="workspace-btn-ghost"
-              onClick={() => setShowSequential(true)}
-              disabled={!analyzeResult}
-              title={!analyzeResult ? "Analiza primero para poder mostrarlo paso a paso" : "Mostrar paso a paso en clase"}
-            >
-              🎓 Modo secuencial (clase)
-            </button>
-          </div>
-
           {/* La tabla de resultados va creciendo aquí, en el centro,
               según se van efectuando análisis. */}
           {previewingLive && <p className="preview-loading mono">recalculando…</p>}
           <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
+
+          <button
+            className="workspace-btn-primary analyze-btn"
+            onClick={handleAnalyze}
+            disabled={!file || channelSelection.length === 0 || !activeSubjectId || analyzing}
+          >
+            {analyzing ? "Guardando…" : "💾 Guardar"}
+          </button>
 
           <BatchImport
             desktopId={desktop.id}

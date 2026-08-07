@@ -3,8 +3,12 @@ import "./SegmentSlider.css";
 /**
  * Doble tirador para recortar qué tramo de la señal se analiza
  * (segmentación visual). startFraction/endFraction van de 0 a 1.
+ *
+ * Además, cuando hay una selección recortada (no toda la señal), se
+ * muestra una lupa flotante justo encima del tramo elegido para
+ * ampliarlo/verlo completo en el gráfico -zoomed/onToggleZoom-.
  */
-export default function SegmentSlider({ startFraction, endFraction, totalDurationMs, onChange }) {
+export default function SegmentSlider({ startFraction, endFraction, totalDurationMs, onChange, zoomed, onToggleZoom }) {
   const startPct = Math.round(startFraction * 1000);
   const endPct = Math.round(endFraction * 1000);
 
@@ -26,6 +30,17 @@ export default function SegmentSlider({ startFraction, endFraction, totalDuratio
 
   return (
     <div className="segment-slider-wrap">
+      {!isFullRange && (
+        <button
+          type="button"
+          className={`segment-zoom-float ${zoomed ? "is-zoomed" : ""}`}
+          style={{ left: `${((startFraction + endFraction) / 2) * 100}%` }}
+          onClick={onToggleZoom}
+          title={zoomed ? "Ver la señal completa" : "Ampliar el tramo seleccionado"}
+        >
+          {zoomed ? "🔍−" : "🔍+"}
+        </button>
+      )}
       <div className="segment-slider">
         <div className="segment-slider-track" />
         <div

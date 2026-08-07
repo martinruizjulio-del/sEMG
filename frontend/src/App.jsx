@@ -15,6 +15,11 @@ function AppShell() {
   // escritorios, en vez de en el centro.
   const [calculations, setCalculations] = useState(["media", "maximo", "picos"]);
   const [peakConfig, setPeakConfig] = useState({ n_peaks: null, min_peak_distance_ms: null });
+  // El botón "Detectar y ajustar picos" vive en la columna izquierda
+  // (dentro de CalculationPanel), pero la lógica de análisis vive en
+  // DesktopWorkspace. Se comunican con una simple señal (un contador):
+  // al pulsar el botón se incrementa, y DesktopWorkspace reacciona.
+  const [detectPeaksSignal, setDetectPeaksSignal] = useState(0);
 
   const loadDesktops = useCallback(async () => {
     const list = await api.listDesktops();
@@ -51,6 +56,7 @@ function AppShell() {
         onChangeCalculations={setCalculations}
         peakConfig={peakConfig}
         onChangePeakConfig={setPeakConfig}
+        onDetectPeaks={() => setDetectPeaksSignal((n) => n + 1)}
       />
       {activeDesktop ? (
         <DesktopWorkspace
@@ -59,6 +65,7 @@ function AppShell() {
           onDesktopUpdated={handleDesktopUpdated}
           calculations={calculations}
           peakConfig={peakConfig}
+          detectPeaksSignal={detectPeaksSignal}
         />
       ) : (
         <div className="app-empty-state">

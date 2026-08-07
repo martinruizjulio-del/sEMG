@@ -1,15 +1,15 @@
 import "./ChannelPanel.css";
 
-// Detecta el lado a partir del nombre del canal, tal como lo exportan
-// los equipos EMG habituales (p.ej. "Biceps femoris Right µV").
-// OJO: el aparato de Julio etiqueta el lado AL REVÉS de la realidad
-// (confirmado comparando con mediciones de referencia), así que aquí
-// se invierte automáticamente: lo que el archivo llama "Right" se usa
-// como Izquierdo, y viceversa.
+// Detecta el lado a partir del nombre del canal, tal como lo etiqueta
+// el propio archivo (p.ej. "Biceps femoris Right µV" -> R). No se
+// invierte: cada sesión de grabación puede tener los electrodos
+// colocados de forma distinta, así que lo fiable es mostrar
+// exactamente lo que dice el archivo y dejar que se corrija a mano
+// con el desplegable si hace falta para ese archivo en concreto.
 function detectSide(label) {
   const l = label.toLowerCase();
-  if (/\bright\b|\bderecho\b|\(r\)/.test(l)) return "L";
-  if (/\bleft\b|\bizquierdo\b|\(l\)/.test(l)) return "R";
+  if (/\bright\b|\bderecho\b|\(r\)/.test(l)) return "R";
+  if (/\bleft\b|\bizquierdo\b|\(l\)/.test(l)) return "L";
   return null;
 }
 
