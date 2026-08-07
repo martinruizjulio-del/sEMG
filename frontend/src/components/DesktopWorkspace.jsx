@@ -30,6 +30,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
   const [error, setError] = useState("");
   const [resultsRefreshKey, setResultsRefreshKey] = useState(0);
   const [showSequential, setShowSequential] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Picos colocados manualmente en el gráfico (estilo Slider.m):
   // { [channelIndex]: [tiempo_ms, ...] }. Solo un canal puede estar
@@ -303,19 +304,30 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
           />
         </div>
 
-        <aside className="workspace-sidebar">
-          <ChannelPanel
-            channels={preview?.channels || []}
-            selection={channelSelection}
-            onChange={setChannelSelection}
-            calculationsIncludePicos={calculations.includes("picos")}
-            manualPeaks={manualPeaks}
-            manualPeakActiveIndex={manualPeakActiveIndex}
-            onSetManualPeakActive={setManualPeakActiveIndex}
-            onClearManualPeaks={handleClearManualPeaks}
-          />
-          <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
-        </aside>
+        <button
+          type="button"
+          className={`workspace-sidebar-tab ${sidebarOpen ? "is-open" : ""}`}
+          onClick={() => setSidebarOpen((v) => !v)}
+          title={sidebarOpen ? "Ocultar canales y resultados" : "Mostrar canales y resultados"}
+        >
+          {sidebarOpen ? "Canales ▸" : "◂ Canales"}
+        </button>
+
+        {sidebarOpen && (
+          <aside className="workspace-sidebar">
+            <ChannelPanel
+              channels={preview?.channels || []}
+              selection={channelSelection}
+              onChange={setChannelSelection}
+              calculationsIncludePicos={calculations.includes("picos")}
+              manualPeaks={manualPeaks}
+              manualPeakActiveIndex={manualPeakActiveIndex}
+              onSetManualPeakActive={setManualPeakActiveIndex}
+              onClearManualPeaks={handleClearManualPeaks}
+            />
+            <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
+          </aside>
+        )}
       </div>
 
       <SessionHistory desktopId={desktop.id} subjects={subjects} refreshKey={resultsRefreshKey} />
