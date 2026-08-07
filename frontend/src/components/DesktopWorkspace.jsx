@@ -61,6 +61,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
   // total). Por defecto, la señal completa.
   const [segmentStart, setSegmentStart] = useState(0);
   const [segmentEnd, setSegmentEnd] = useState(1);
+  const [zoomedToSegment, setZoomedToSegment] = useState(false);
 
   const loadSubjects = useCallback(async () => {
     const list = await api.listSubjects(desktop.id);
@@ -94,6 +95,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
       setManualPeakActiveIndex(null);
       setSegmentStart(0);
       setSegmentEnd(1);
+      setZoomedToSegment(false);
     } catch (err) {
       setError(
         err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")
@@ -148,7 +150,12 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
 
   function handleManualPeakClick(fraction) {
     if (manualPeakActiveIndex === null) return;
-    const timeMs = fraction * totalDurationMs;
+    // Si hay zoom a la selección, el clic llega en fracción del tramo
+    // visible (recortado), hay que convertirlo a tiempo absoluto del
+    // archivo completo antes de guardarlo.
+    const timeMs = zoomedToSegment
+      ? (segmentStart + fraction * (segmentEnd - segmentStart)) * totalDurationMs
+      : fraction * totalDurationMs;
     setManualPeaks((prev) => {
       const current = prev[manualPeakActiveIndex] || [];
       // Si el clic cae cerca (±1% del total) de un pico ya colocado,
@@ -239,7 +246,12 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
 
   const waveformData = channelSelection.map((c) => {
     const cached = channelPreviews[c.index];
-    const values = cached ? cached[mode] : preview?.preview?.[c.index] || [];
+    let values = cached ? cached[mode] : preview?.preview?.[c.index] || [];
+    if (zoomedToSegment && values.length > 0) {
+      const startIdx = Math.floor(segmentStart * values.length);
+      const endIdx = Math.max(startIdx + 1, Math.ceil(segmentEnd * values.length));
+      values = values.slice(startIdx, endIdx);
+    }
     return { values, colorClass: `channel-color-${c.index % 8}` };
   });
 
@@ -292,17 +304,28 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
           )}
           {error && <p className="workspace-error">{error}</p>}
 
+          {manualPeakActiveIndex !== null && (
+            <button type="button" className="workspace-btn-ghost exit-manual-btn" onClick={() => setManualPeakActiveIndex(null)}>
+              ✕ Salir de "colocar picos"
+            </button>
+          )}
+
           <WaveformView
             channelsData={waveformData}
             onManualPeakClick={manualPeakActiveIndex !== null ? handleManualPeakClick : undefined}
             manualPeakFractions={
               manualPeakActiveIndex !== null && totalDurationMs > 0
-                ? (manualPeaks[manualPeakActiveIndex] || []).map((t) => t / totalDurationMs)
+                ? (manualPeaks[manualPeakActiveIndex] || [])
+                    .map((t) => {
+                      const absFraction = t / totalDurationMs;
+                      return zoomedToSegment ? (absFraction - segmentStart) / (segmentEnd - segmentStart) : absFraction;
+                    })
+                    .filter((f) => f >= -0.001 && f <= 1.001)
                 : []
             }
-            segmentStartFraction={segmentStart}
-            segmentEndFraction={segmentEnd}
-            totalDurationMs={totalDurationMs}
+            segmentStartFraction={zoomedToSegment ? 0 : segmentStart}
+            segmentEndFraction={zoomedToSegment ? 1 : segmentEnd}
+            totalDurationMs={zoomedToSegment ? (segmentEnd - segmentStart) * totalDurationMs : totalDurationMs}
             strokeWidth={strokeWidth}
           />
 
@@ -327,8 +350,19 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
               onChange={(start, end) => {
                 setSegmentStart(start);
                 setSegmentEnd(end);
+                setZoomedToSegment(false);
               }}
             />
+          )}
+
+          {preview && (segmentStart > 0 || segmentEnd < 1) && (
+            <button
+              type="button"
+              className="workspace-btn-ghost"
+              onClick={() => setZoomedToSegment((v) => !v)}
+            >
+              {zoomedToSegment ? "🔍− Ver señal completa" : "🔍+ Ampliar la selección"}
+            </button>
           )}
 
           {preview && (

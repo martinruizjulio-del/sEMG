@@ -124,6 +124,12 @@
   margin: 6px 0 0;
 }
 
+.exit-manual-btn {
+  align-self: flex-start;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .stroke-width-control {
   display: flex;
   align-items: center;
