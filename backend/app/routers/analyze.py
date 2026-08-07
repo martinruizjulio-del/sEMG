@@ -268,9 +268,12 @@ async def analyze_file(
 
 def _add_bilateral_ratios(channel_records: list[dict]) -> None:
     """Para cada par de canales del mismo grupo muscular (mismo nombre
-    base, uno R y otro L), añade 'ratio_bilateral_<metrica>' = R / L a
-    AMBOS canales del par, para cada métrica de amplitud presente en
-    los dos (media/máximo/mediana)."""
+    base, uno R y otro L), añade 'ratio_bilateral_<metrica>' a AMBOS
+    canales del par, para cada métrica de amplitud presente en los dos
+    (media/máximo/mediana). Se calcula como índice de simetría -el
+    valor más pequeño de los dos entre el más grande-, así que siempre
+    va de 0 a 1 (1 = simetría perfecta), sin importar qué lado sea
+    mayor."""
     by_base: dict[str, dict[str, dict]] = {}
     for rec in channel_records:
         if rec["side"] not in ("R", "L"):
@@ -284,10 +287,11 @@ def _add_bilateral_ratios(channel_records: list[dict]) -> None:
         rec_r, rec_l = sides["R"], sides["L"]
         shared_metrics = _AMPLITUDE_METRICS & set(rec_r["metrics"]) & set(rec_l["metrics"])
         for metric_name in shared_metrics:
-            val_r, val_l = rec_r["metrics"][metric_name], rec_l["metrics"][metric_name]
-            if val_l == 0:
+            val_r, val_l = abs(rec_r["metrics"][metric_name]), abs(rec_l["metrics"][metric_name])
+            mayor = max(val_r, val_l)
+            if mayor == 0:
                 continue  # evitar división por cero
-            ratio = val_r / val_l
+            ratio = min(val_r, val_l) / mayor
             rec_r["metrics"][f"ratio_bilateral_{metric_name}"] = ratio
             rec_l["metrics"][f"ratio_bilateral_{metric_name}"] = ratio
 

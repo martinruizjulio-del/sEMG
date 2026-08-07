@@ -120,7 +120,9 @@ export default function WaveformView({
         <div className="waveform-empty">Sube un archivo y selecciona un canal para ver la señal.</div>
       )}
       {onManualPeakClick && (
-        <div className="waveform-manual-hint">Haz clic en el gráfico para colocar un pico ({manualPeakFractions.length} colocados)</div>
+        <div className="waveform-manual-hint">
+          Clic para añadir un pico · clic cerca de uno ya puesto para quitarlo ({manualPeakFractions.length} colocados)
+        </div>
       )}
     </div>
   );

@@ -151,8 +151,44 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
     const timeMs = fraction * totalDurationMs;
     setManualPeaks((prev) => {
       const current = prev[manualPeakActiveIndex] || [];
+      // Si el clic cae cerca (±1% del total) de un pico ya colocado,
+      // se quita en vez de añadir uno nuevo -así se pueden corregir
+      // los picos detectados automáticamente sin tener que limpiarlos
+      // todos y empezar de cero-.
+      const thresholdMs = totalDurationMs * 0.01;
+      const closeIdx = current.findIndex((t) => Math.abs(t - timeMs) < thresholdMs);
+      if (closeIdx !== -1) {
+        const next = current.filter((_, i) => i !== closeIdx);
+        return { ...prev, [manualPeakActiveIndex]: next };
+      }
       return { ...prev, [manualPeakActiveIndex]: [...current, timeMs].sort((a, b) => a - b) };
     });
+  }
+
+  async function handleDetectPeaks() {
+    if (!file || !activeSubjectId || channelSelection.length === 0) return;
+    setError("");
+    try {
+      const config = {
+        channels: channelSelection.map((c) => ({ index: c.index, side: c.side, sensor_type: c.sensor_type })),
+        calculations: ["picos"],
+        peak_config: peakConfig,
+        save_results: false,
+        segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
+        segment_end_ms: segmentEnd < 1 ? segmentEnd * totalDurationMs : null,
+      };
+      const result = await api.analyze(desktop.id, activeSubjectId, file, config);
+      const detected = {};
+      result.channels.forEach((ch, i) => {
+        const idx = channelSelection[i]?.index;
+        if (idx !== undefined && ch.peak_times_ms) detected[idx] = ch.peak_times_ms;
+      });
+      setManualPeaks(detected);
+      const firstIndex = Object.keys(detected)[0];
+      if (firstIndex !== undefined) setManualPeakActiveIndex(Number(firstIndex));
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   function handleClearManualPeaks(index) {
@@ -317,6 +353,17 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
             >
               {analyzing ? "Analizando…" : "Analizar y guardar"}
             </button>
+            {calculations.includes("picos") && (
+              <button
+                type="button"
+                className="workspace-btn-ghost"
+                onClick={handleDetectPeaks}
+                disabled={!file || channelSelection.length === 0}
+                title="Detecta los picos automáticamente y los muestra en el gráfico para poder ajustarlos a mano, sin guardar todavía"
+              >
+                🎯 Detectar y ajustar picos
+              </button>
+            )}
             <button
               type="button"
               className="workspace-btn-ghost"

@@ -7,7 +7,7 @@ const CALCS = [
   { value: "picos", label: "Picos" },
   { value: "frecuencia", label: "Frecuencia dominante" },
   { value: "fatiga", label: "Fatiga" },
-  { value: "ratio_bilateral", label: "Ratio bilateral (R/L)" },
+  { value: "ratio_bilateral", label: "Ratio bilateral (índice simetría)" },
   { value: "normalizacion", label: "Normalización de activación (%)" },
   { value: "orden_activacion", label: "Orden de activación" },
 ];
@@ -71,7 +71,7 @@ export default function CalculationPanel({ calculations, onChangeCalculations, p
       {(calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("orden_activacion")) && (
         <p className="calc-hint">
           {calculations.includes("ratio_bilateral") && (
-            <>Ratio bilateral: necesita al menos un canal marcado como "Derecho (R)" y otro como "Izquierdo (L)" del mismo músculo, y que Media, Máximo o Mediana también estén marcados. </>
+            <>Ratio bilateral: índice de simetría (siempre entre 0 y 1, 1 = simetría perfecta). Necesita al menos un canal marcado como "Derecho (R)" y otro como "Izquierdo (L)" del mismo músculo, y que Media, Máximo o Mediana también estén marcados. </>
           )}
           {calculations.includes("normalizacion") && (
             <>Normalización: reparte el % entre todos los canales seleccionados para Media, Máximo o Mediana. </>
