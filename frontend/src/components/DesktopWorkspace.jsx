@@ -211,6 +211,9 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
             + Control
           </button>
           <ExternalLink desktop={desktop} onUpdated={onDesktopUpdated} />
+          <button className="workspace-btn-ghost" onClick={() => setSidebarOpen((v) => !v)}>
+            {sidebarOpen ? "Ocultar canales" : "Mostrar canales"}
+          </button>
           <button className="workspace-btn-primary" onClick={handleExport}>
             Exportar .xlsx
           </button>
@@ -303,15 +306,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
             }}
           />
         </div>
-
-        <button
-          type="button"
-          className={`workspace-sidebar-tab ${sidebarOpen ? "is-open" : ""}`}
-          onClick={() => setSidebarOpen((v) => !v)}
-          title={sidebarOpen ? "Ocultar canales y resultados" : "Mostrar canales y resultados"}
-        >
-          {sidebarOpen ? "Canales ▸" : "◂ Canales"}
-        </button>
 
         {sidebarOpen && (
           <aside className="workspace-sidebar">

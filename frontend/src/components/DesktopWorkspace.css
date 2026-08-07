@@ -154,29 +154,3 @@
   flex-direction: column;
   gap: 16px;
 }
-
-.workspace-sidebar-tab {
-  flex-shrink: 0;
-  align-self: flex-start;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-right: none;
-  color: var(--text-secondary);
-  font-size: 12px;
-  padding: 10px 6px;
-  writing-mode: vertical-rl;
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-}
-
-.workspace-sidebar-tab.is-open {
-  writing-mode: horizontal-tb;
-  align-self: flex-start;
-  margin-top: 12px;
-  border-radius: var(--radius-sm);
-  border-right: 1px solid var(--border-strong);
-}
-
-.workspace-sidebar-tab:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
