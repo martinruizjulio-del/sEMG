@@ -76,6 +76,36 @@
   stroke-dasharray: 3 2;
 }
 
+.waveform-peak-line {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+  opacity: 0.8;
+}
+
+.waveform-peak-dot {
+  fill: currentColor;
+}
+
+.waveform-peak-label {
+  fill: currentColor;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.waveform-peak-line.channel-color-0, .waveform-peak-dot.channel-color-0, g.channel-color-0 { color: var(--ch-1); }
+.waveform-peak-line.channel-color-1, .waveform-peak-dot.channel-color-1, g.channel-color-1 { color: var(--ch-2); }
+.waveform-peak-line.channel-color-2, .waveform-peak-dot.channel-color-2, g.channel-color-2 { color: var(--ch-3); }
+.waveform-peak-line.channel-color-3, .waveform-peak-dot.channel-color-3, g.channel-color-3 { color: var(--ch-4); }
+.waveform-peak-line.channel-color-4, .waveform-peak-dot.channel-color-4, g.channel-color-4 { color: var(--ch-5); }
+.waveform-peak-line.channel-color-5, .waveform-peak-dot.channel-color-5, g.channel-color-5 { color: var(--ch-6); }
+.waveform-peak-line.channel-color-6, .waveform-peak-dot.channel-color-6, g.channel-color-6 { color: var(--ch-7); }
+.waveform-peak-line.channel-color-7, .waveform-peak-dot.channel-color-7, g.channel-color-7 { color: var(--ch-8); }
+
 .waveform-dim {
   fill: var(--bg);
   opacity: 0.7;

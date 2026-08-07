@@ -130,6 +130,25 @@
   color: var(--accent);
 }
 
+.center-window-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+
+.center-window-shortcut input {
+  width: 70px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
 .stroke-width-control {
   display: flex;
   align-items: center;

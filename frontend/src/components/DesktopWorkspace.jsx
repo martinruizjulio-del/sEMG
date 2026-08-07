@@ -64,6 +64,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
   const [segmentStart, setSegmentStart] = useState(0);
   const [segmentEnd, setSegmentEnd] = useState(1);
   const [zoomedToSegment, setZoomedToSegment] = useState(false);
+  const [centerWindowMs, setCenterWindowMs] = useState(1500);
 
   const loadSubjects = useCallback(async () => {
     const list = await api.listSubjects(desktop.id);
@@ -288,6 +289,37 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
     return { values, colorClass: `channel-color-${c.index % 8}` };
   });
 
+  const activeChannelSel = channelSelection.find((c) => c.index === manualPeakActiveIndex);
+  const activeChannelValues = (() => {
+    if (manualPeakActiveIndex === null) return [];
+    const cached = channelPreviews[manualPeakActiveIndex];
+    let values = cached ? cached[mode] : [];
+    if (zoomedToSegment && values.length > 0) {
+      const startIdx = Math.floor(segmentStart * values.length);
+      const endIdx = Math.max(startIdx + 1, Math.ceil(segmentEnd * values.length));
+      values = values.slice(startIdx, endIdx);
+    }
+    return values;
+  })();
+
+  const peakMarkers =
+    manualPeakActiveIndex !== null && totalDurationMs > 0
+      ? (manualPeaks[manualPeakActiveIndex] || [])
+          .map((t) => {
+            const absFraction = t / totalDurationMs;
+            const fraction = zoomedToSegment ? (absFraction - segmentStart) / (segmentEnd - segmentStart) : absFraction;
+            const idx = Math.round(fraction * (activeChannelValues.length - 1));
+            const value = activeChannelValues[idx];
+            return {
+              fraction,
+              value,
+              label: activeChannelSel?.label || `canal ${manualPeakActiveIndex}`,
+              colorClass: `channel-color-${manualPeakActiveIndex % 8}`,
+            };
+          })
+          .filter((p) => p.fraction >= -0.001 && p.fraction <= 1.001)
+      : [];
+
   return (
     <div className="workspace">
       <header className="workspace-header">
@@ -346,16 +378,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
           <WaveformView
             channelsData={waveformData}
             onManualPeakClick={manualPeakActiveIndex !== null ? handleManualPeakClick : undefined}
-            manualPeakFractions={
-              manualPeakActiveIndex !== null && totalDurationMs > 0
-                ? (manualPeaks[manualPeakActiveIndex] || [])
-                    .map((t) => {
-                      const absFraction = t / totalDurationMs;
-                      return zoomedToSegment ? (absFraction - segmentStart) / (segmentEnd - segmentStart) : absFraction;
-                    })
-                    .filter((f) => f >= -0.001 && f <= 1.001)
-                : []
-            }
+            peakMarkers={peakMarkers}
             segmentStartFraction={zoomedToSegment ? 0 : segmentStart}
             segmentEndFraction={zoomedToSegment ? 1 : segmentEnd}
             totalDurationMs={zoomedToSegment ? (segmentEnd - segmentStart) * totalDurationMs : totalDurationMs}
@@ -402,16 +425,39 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
           </div>
 
           {preview && (
-            <SegmentSlider
-              startFraction={segmentStart}
-              endFraction={segmentEnd}
-              totalDurationMs={totalDurationMs}
-              onChange={(start, end) => {
-                setSegmentStart(start);
-                setSegmentEnd(end);
-                setZoomedToSegment(false);
-              }}
-            />
+            <>
+              <SegmentSlider
+                startFraction={segmentStart}
+                endFraction={segmentEnd}
+                totalDurationMs={totalDurationMs}
+                onChange={(start, end) => {
+                  setSegmentStart(start);
+                  setSegmentEnd(end);
+                  setZoomedToSegment(false);
+                }}
+              />
+              <div className="center-window-shortcut mono">
+                <button
+                  type="button"
+                  className="workspace-btn-ghost"
+                  onClick={() => {
+                    const centerMs = totalDurationMs / 2;
+                    setSegmentStart(Math.max(0, (centerMs - centerWindowMs) / totalDurationMs));
+                    setSegmentEnd(Math.min(1, (centerMs + centerWindowMs) / totalDurationMs));
+                    setZoomedToSegment(false);
+                  }}
+                >
+                  Centrar ±
+                </button>
+                <input
+                  type="number"
+                  min="0"
+                  value={centerWindowMs}
+                  onChange={(e) => setCenterWindowMs(Number(e.target.value) || 0)}
+                />
+                ms
+              </div>
+            </>
           )}
 
           {preview && (segmentStart > 0 || segmentEnd < 1) && (

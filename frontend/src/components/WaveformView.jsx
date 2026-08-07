@@ -26,13 +26,17 @@ function smoothMovingAverage(values, windowSize) {
  * Si se pasa `onManualPeakClick`, el gráfico se vuelve clicable: cada
  * clic añade un pico manual (posicionamiento directo, estilo Slider.m)
  * en la fracción 0..1 del ancho donde se pulsó. `manualPeakFractions`
- * dibuja los picos ya colocados como marcas verticales.
+ * dibuja los picos ya colocados como marcas verticales sencillas.
+ * `peakMarkers` (más completo) dibuja además una etiqueta con el
+ * músculo y el valor, coloreada como ese canal:
+ * [{ fraction, value, label, colorClass }]
  */
 export default function WaveformView({
   channelsData,
   height = 260,
   onManualPeakClick,
   manualPeakFractions = [],
+  peakMarkers = [],
   segmentStartFraction = 0,
   segmentEndFraction = 1,
   totalDurationMs = 0,
@@ -140,6 +144,21 @@ export default function WaveformView({
           {manualPeakFractions.map((f, i) => (
             <line key={i} x1={f * plotWidth} y1="0" x2={f * plotWidth} y2={plotHeight} className="waveform-manual-peak" />
           ))}
+          {peakMarkers.map((p, i) => {
+            const x = p.fraction * plotWidth;
+            // Alternar la altura de la etiqueta para que no se solapen
+            // si hay varios picos muy juntos.
+            const labelY = 14 + (i % 3) * 14;
+            return (
+              <g key={`marker-${i}`} className={p.colorClass}>
+                <line x1={x} y1="0" x2={x} y2={plotHeight} className="waveform-peak-line" />
+                <circle cx={x} cy={labelY} r="2.5" className="waveform-peak-dot" />
+                <text x={x + 6} y={labelY + 3} className="waveform-peak-label">
+                  {p.label} · {typeof p.value === "number" ? p.value.toFixed(2) : p.value}
+                </text>
+              </g>
+            );
+          })}
           {timeTicks.map((t) => (
             <text key={t} className="waveform-tick" x={t * plotWidth} y={plotHeight + 16} textAnchor="middle">
               {Math.round(t * totalDurationMs)}
@@ -152,7 +171,7 @@ export default function WaveformView({
       )}
       {onManualPeakClick && (
         <div className="waveform-manual-hint">
-          Clic para añadir un pico · clic cerca de uno ya puesto para quitarlo ({manualPeakFractions.length} colocados)
+          Clic para añadir un pico · clic cerca de uno ya puesto para quitarlo ({peakMarkers.length || manualPeakFractions.length} colocados)
         </div>
       )}
     </div>
