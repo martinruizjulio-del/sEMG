@@ -10,6 +10,11 @@ function AppShell() {
   const [desktops, setDesktops] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  // Opciones de cálculo: viven aquí (no dentro de DesktopWorkspace) para
+  // poder mostrarlas en la columna izquierda, junto a la lista de
+  // escritorios, en vez de en el centro.
+  const [calculations, setCalculations] = useState(["media", "maximo", "picos"]);
+  const [peakConfig, setPeakConfig] = useState({ n_peaks: null, min_peak_distance_ms: null });
 
   const loadDesktops = useCallback(async () => {
     const list = await api.listDesktops();
@@ -37,9 +42,24 @@ function AppShell() {
 
   return (
     <div className="app-shell">
-      <DesktopList desktops={desktops} activeId={activeId} onSelect={setActiveId} onCreate={handleCreate} />
+      <DesktopList
+        desktops={desktops}
+        activeId={activeId}
+        onSelect={setActiveId}
+        onCreate={handleCreate}
+        calculations={calculations}
+        onChangeCalculations={setCalculations}
+        peakConfig={peakConfig}
+        onChangePeakConfig={setPeakConfig}
+      />
       {activeDesktop ? (
-        <DesktopWorkspace key={activeDesktop.id} desktop={activeDesktop} onDesktopUpdated={handleDesktopUpdated} />
+        <DesktopWorkspace
+          key={activeDesktop.id}
+          desktop={activeDesktop}
+          onDesktopUpdated={handleDesktopUpdated}
+          calculations={calculations}
+          peakConfig={peakConfig}
+        />
       ) : (
         <div className="app-empty-state">
           {loaded ? "Crea un escritorio nuevo para empezar." : "Cargando…"}

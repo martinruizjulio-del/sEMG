@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import CalculationPanel from "./CalculationPanel";
 import "./DesktopList.css";
 
-export default function DesktopList({ desktops, activeId, onSelect, onCreate }) {
+export default function DesktopList({
+  desktops,
+  activeId,
+  onSelect,
+  onCreate,
+  calculations,
+  onChangeCalculations,
+  peakConfig,
+  onChangePeakConfig,
+}) {
   const { logout } = useAuth();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
@@ -59,6 +69,18 @@ export default function DesktopList({ desktops, activeId, onSelect, onCreate }) 
         <button className="desktop-create-btn" onClick={() => setCreating(true)}>
           + Nuevo escritorio
         </button>
+      )}
+
+      {calculations && (
+        <div className="desktop-list-calc-panel">
+          <div className="desktop-list-section-label">Opciones generales</div>
+          <CalculationPanel
+            calculations={calculations}
+            onChangeCalculations={onChangeCalculations}
+            peakConfig={peakConfig}
+            onChangePeakConfig={onChangePeakConfig}
+          />
+        </div>
       )}
     </aside>
   );

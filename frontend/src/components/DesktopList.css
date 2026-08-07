@@ -1,7 +1,7 @@
 .desktop-list {
-  flex: 0 1 220px;
-  min-width: 180px;
-  max-width: 300px;
+  flex: 0 1 300px;
+  min-width: 220px;
+  max-width: 380px;
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
@@ -124,4 +124,10 @@
   padding: 8px 10px;
   color: var(--text-primary);
   font-size: 13px;
+}
+
+.desktop-list-calc-panel {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }

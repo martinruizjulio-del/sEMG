@@ -3,7 +3,6 @@ import { api } from "../lib/api";
 import ChannelPanel from "./ChannelPanel";
 import ModeSwitch from "./ModeSwitch";
 import WaveformView from "./WaveformView";
-import CalculationPanel from "./CalculationPanel";
 import ResultsPanel from "./ResultsPanel";
 import SessionHistory from "./SessionHistory";
 import SegmentSlider from "./SegmentSlider";
@@ -12,7 +11,7 @@ import SequentialMode from "./SequentialMode";
 import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
+export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
 
@@ -24,9 +23,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
   const [strokeWidth, setStrokeWidth] = useState(1.4);
   const [chartStyle, setChartStyle] = useState("line");
   const [smoothWindow, setSmoothWindow] = useState(0);
-
-  const [calculations, setCalculations] = useState(["media", "maximo", "picos"]);
-  const [peakConfig, setPeakConfig] = useState({ n_peaks: null, min_peak_distance_ms: null });
 
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState(null);
@@ -477,13 +473,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
             </div>
           )}
 
-          <CalculationPanel
-            calculations={calculations}
-            onChangeCalculations={setCalculations}
-            peakConfig={peakConfig}
-            onChangePeakConfig={setPeakConfig}
-          />
-
           <div className="analyze-row">
             <button
               className="workspace-btn-primary analyze-btn"
@@ -514,6 +503,10 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
             </button>
           </div>
 
+          {/* La tabla de resultados va creciendo aquí, en el centro,
+              según se van efectuando análisis. */}
+          <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
+
           <BatchImport
             desktopId={desktop.id}
             channelSelection={channelSelection}
@@ -541,7 +534,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
                 onSetManualPeakActive={handleSetManualPeakActive}
                 onClearManualPeaks={handleClearManualPeaks}
               />
-              <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
             </aside>
           </>
         )}
