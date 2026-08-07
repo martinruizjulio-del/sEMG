@@ -13,6 +13,8 @@ export default function DesktopList({
   peakConfig,
   onChangePeakConfig,
   onDetectPeaks,
+  smooth,
+  onChangeSmooth,
 }) {
   const { logout } = useAuth();
   const [creating, setCreating] = useState(false);
@@ -81,6 +83,8 @@ export default function DesktopList({
             peakConfig={peakConfig}
             onChangePeakConfig={onChangePeakConfig}
             onDetectPeaks={onDetectPeaks}
+            smooth={smooth}
+            onChangeSmooth={onChangeSmooth}
           />
         </div>
       )}

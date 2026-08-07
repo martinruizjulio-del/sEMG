@@ -27,6 +27,9 @@ class AnalyzeRequest(BaseModel):
     ]]
     peak_config: Optional[PeakConfig] = None
     rms_num_points: int = 51
+    # Suavizado tipo smoothdata() de MATLAB (ventana automática),
+    # aplicado tras el RMS y antes de calcular media/máximo/picos/etc.
+    smooth: bool = False
     save_results: bool = True
     session_label: Optional[str] = None  # si no se da, se usa el nombre del archivo subido
     # Segmentación visual: analizar solo este tramo de la señal (ms,

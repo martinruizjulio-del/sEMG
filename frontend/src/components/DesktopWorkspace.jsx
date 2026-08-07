@@ -11,7 +11,7 @@ import SequentialMode from "./SequentialMode";
 import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, detectPeaksSignal }) {
+export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, detectPeaksSignal, smooth }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
 
@@ -22,7 +22,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   const [mode, setMode] = useState("raw");
   const [strokeWidth, setStrokeWidth] = useState(1.4);
   const [chartStyle, setChartStyle] = useState("line");
-  const [smoothWindow, setSmoothWindow] = useState(0);
 
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState(null);
@@ -137,7 +136,8 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     api
       .channelPreview(
         file,
-        channelSelection.map((c) => ({ index: c.index, sensor_type: c.sensor_type }))
+        channelSelection.map((c) => ({ index: c.index, sensor_type: c.sensor_type })),
+        smooth
       )
       .then((data) => {
         if (cancelled) return;
@@ -153,7 +153,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, JSON.stringify(channelSelection.map((c) => [c.index, c.sensor_type]))]);
+  }, [file, JSON.stringify(channelSelection.map((c) => [c.index, c.sensor_type])), smooth]);
 
   async function handleAddSubject(group) {
     const subject = await api.addSubject(desktop.id, group);
@@ -196,6 +196,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         channels: channelSelection.map((c) => ({ index: c.index, side: c.side, sensor_type: c.sensor_type })),
         calculations: ["picos"],
         peak_config: peakConfig,
+        smooth,
         save_results: false,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
         segment_end_ms: segmentEnd < 1 ? segmentEnd * totalDurationMs : null,
@@ -241,6 +242,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         channels: [{ index: sel.index, side: sel.side, sensor_type: sel.sensor_type }],
         calculations: ["picos"],
         peak_config: peakConfig,
+        smooth,
         save_results: false,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
         segment_end_ms: segmentEnd < 1 ? segmentEnd * totalDurationMs : null,
@@ -276,6 +278,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         })),
         calculations,
         peak_config: peakConfig,
+        smooth,
         save_results: true,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
         segment_end_ms: segmentEnd < 1 ? segmentEnd * totalDurationMs : null,
@@ -310,6 +313,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           })),
           calculations,
           peak_config: peakConfig,
+          smooth,
           save_results: false,
           segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
           segment_end_ms: segmentEnd < 1 ? segmentEnd * totalDurationMs : null,
@@ -326,7 +330,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     }, 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, segmentStart, segmentEnd, manualPeakActiveIndex]);
+  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex]);
 
   async function handleExport() {
     const blob = await api.exportDesktop(desktop.id);
@@ -469,7 +473,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             totalDurationMs={zoomedToSegment ? (segmentEnd - segmentStart) * totalDurationMs : totalDurationMs}
             strokeWidth={strokeWidth}
             chartStyle={chartStyle}
-            smoothWindow={smoothWindow}
           />
 
           <div className="chart-controls">
@@ -494,19 +497,6 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
                 Área
               </button>
             </div>
-
-            <label className="stroke-width-control mono">
-              Suavizado
-              <input
-                type="range"
-                min="0"
-                max="61"
-                step="2"
-                value={smoothWindow}
-                onChange={(e) => setSmoothWindow(Number(e.target.value))}
-              />
-              {smoothWindow > 1 ? `${smoothWindow} pts` : "sin suavizar"}
-            </label>
           </div>
 
           {preview && (
@@ -572,6 +562,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             channelSelection={channelSelection}
             calculations={calculations}
             peakConfig={peakConfig}
+            smooth={smooth}
             disabled={!preview}
             onDone={() => {
               loadSubjects();

@@ -83,3 +83,24 @@
   margin-top: 12px;
   text-align: center;
 }
+
+.calc-smooth-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.calc-hint-smooth {
+  margin-top: 6px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.calc-hint-smooth code {
+  color: var(--accent);
+}

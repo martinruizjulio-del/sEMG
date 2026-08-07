@@ -15,6 +15,11 @@ function AppShell() {
   // escritorios, en vez de en el centro.
   const [calculations, setCalculations] = useState(["media", "maximo", "picos"]);
   const [peakConfig, setPeakConfig] = useState({ n_peaks: null, min_peak_distance_ms: null });
+  // Suavizado tipo smoothdata() de MATLAB: es sí/no (sin niveles
+  // intermedios), y afecta de verdad a los cálculos -no es solo un
+  // efecto visual-, aplicado tras el RMS, igual que en el script de
+  // referencia.
+  const [smooth, setSmooth] = useState(false);
   // El botón "Detectar y ajustar picos" vive en la columna izquierda
   // (dentro de CalculationPanel), pero la lógica de análisis vive en
   // DesktopWorkspace. Se comunican con una simple señal (un contador):
@@ -57,6 +62,8 @@ function AppShell() {
         peakConfig={peakConfig}
         onChangePeakConfig={setPeakConfig}
         onDetectPeaks={() => setDetectPeaksSignal((n) => n + 1)}
+        smooth={smooth}
+        onChangeSmooth={setSmooth}
       />
       {activeDesktop ? (
         <DesktopWorkspace
@@ -66,6 +73,7 @@ function AppShell() {
           calculations={calculations}
           peakConfig={peakConfig}
           detectPeaksSignal={detectPeaksSignal}
+          smooth={smooth}
         />
       ) : (
         <div className="app-empty-state">

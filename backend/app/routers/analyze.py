@@ -19,6 +19,7 @@ from app.processing.rms import rms_emg
 from app.processing.peaks import detect_peaks, manual_peaks, PeakParams
 from app.processing.frequency import dominant_frequency
 from app.processing.fatigue import calculate_fatigue
+from app.processing.smoothing import smoothdata_auto
 from app.core.naming import slugify_variable_name, base_muscle_name
 
 # Métricas de amplitud sobre las que tiene sentido calcular ratio
@@ -61,7 +62,7 @@ def _parse_file(filename: str, raw_bytes: bytes):
     return 1000.0, parsed.column_names, parsed.data
 
 
-def _processed_signal(channel_data: np.ndarray, sensor_type: str, fs: float, rms_num_points: int):
+def _processed_signal(channel_data: np.ndarray, sensor_type: str, fs: float, rms_num_points: int, smooth: bool = False):
     """Pipeline de procesado según el tipo de sensor.
 
     Devuelve (filtered, processed):
@@ -70,6 +71,9 @@ def _processed_signal(channel_data: np.ndarray, sensor_type: str, fs: float, rms
         espectral real de la señal, no una envolvente siempre positiva).
       - processed: señal usada para media/máximo/mediana/picos (para EMG
         es la envolvente RMS, igual que en Slider.m / analizar_picos_EMG.m).
+        Si `smooth` está activado, aquí se aplica smoothdata() -igual que
+        en el script de referencia: filtrar -> recortar -> RMS ->
+        smoothdata -> media/máximo sobre la señal ya suavizada-.
     """
     spec = FilterSpec(channel_type=sensor_type, fs=fs)
     filtered = apply_filter(channel_data, spec)
@@ -79,6 +83,9 @@ def _processed_signal(channel_data: np.ndarray, sensor_type: str, fs: float, rms
         processed = rms_emg(filtered, num_points=rms_num_points).ravel()
     else:
         processed = filtered
+
+    if smooth:
+        processed = smoothdata_auto(processed)
 
     return filtered, processed
 
@@ -151,7 +158,9 @@ async def analyze_file(
         label = ch.label or (detected_names[ch.index] if ch.index < len(detected_names) else f"canal_{ch.index}")
         raw_channel = data[:, ch.index]
 
-        processed_filtered, processed = _processed_signal(raw_channel, ch.sensor_type, fs, request.rms_num_points)
+        processed_filtered, processed = _processed_signal(
+            raw_channel, ch.sensor_type, fs, request.rms_num_points, smooth=request.smooth
+        )
 
         metrics: dict = {}
         variable_names: dict = {}
@@ -334,12 +343,16 @@ def _add_activation_order(channel_records: list[dict]) -> None:
 async def channel_preview(
     channels: str = Form(...),  # JSON: [{"index":0,"sensor_type":"emg"}, ...]
     rms_num_points: int = Form(51),
+    smooth: bool = Form(False),
     file: UploadFile = File(...),
 ):
     """Devuelve, para los canales indicados, las tres versiones
     decimadas (raw / filtrado / RMS) listas para graficar, calculadas
     UNA sola vez por selección de canal — así el frontend puede
-    cambiar de modo (Raw/Filtrado/RMS) sin volver a subir el archivo."""
+    cambiar de modo (Raw/Filtrado/RMS) sin volver a subir el archivo.
+    Si `smooth` está activo, el RMS que se muestra es el ya suavizado
+    -así el gráfico coincide con lo que se está calculando de verdad-.
+    """
     try:
         channel_specs = json.loads(channels)
     except Exception as exc:
@@ -358,7 +371,7 @@ async def channel_preview(
             raise HTTPException(400, f"Canal índice {index} fuera de rango")
 
         raw_channel = data[:, index]
-        filtered, processed = _processed_signal(raw_channel, sensor_type, fs, rms_num_points)
+        filtered, processed = _processed_signal(raw_channel, sensor_type, fs, rms_num_points, smooth=smooth)
 
         out.append({
             "index": index,

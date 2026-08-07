@@ -17,6 +17,8 @@ export default function CalculationPanel({
   peakConfig,
   onChangePeakConfig,
   onDetectPeaks,
+  smooth,
+  onChangeSmooth,
 }) {
   function toggle(value) {
     if (calculations.includes(value)) {
@@ -41,6 +43,17 @@ export default function CalculationPanel({
           </button>
         ))}
       </div>
+
+      <label className="calc-smooth-toggle">
+        <input type="checkbox" checked={smooth} onChange={(e) => onChangeSmooth(e.target.checked)} />
+        Suavizado (smoothdata)
+      </label>
+      {smooth && (
+        <p className="calc-hint calc-hint-smooth">
+          Se aplica sobre el tramo de tiempo seleccionado, tras el RMS y antes de calcular media/máximo/picos -igual
+          que <code>smoothdata()</code> en MATLAB, con ventana automática-.
+        </p>
+      )}
       {(calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("orden_activacion")) && (
         <p className="calc-hint">
           {calculations.includes("ratio_bilateral") && (

@@ -1,24 +1,6 @@
 import { useMemo, useRef } from "react";
 import "./WaveformView.css";
 
-// Suavizado por media móvil, equivalente al método por defecto de
-// smoothdata() de MATLAB ('movmean'): cada punto se sustituye por la
-// media de una ventana centrada de tamaño `windowSize` (en muestras
-// de la señal ya decimada para pantalla).
-function smoothMovingAverage(values, windowSize) {
-  if (windowSize <= 1) return values;
-  const half = Math.floor(windowSize / 2);
-  const out = Array.from({ length: values.length });
-  for (let i = 0; i < values.length; i++) {
-    const start = Math.max(0, i - half);
-    const end = Math.min(values.length, i + half + 1);
-    let sum = 0;
-    for (let j = start; j < end; j++) sum += values[j];
-    out[i] = sum / (end - start);
-  }
-  return out;
-}
-
 /**
  * Traza cada canal seleccionado como una polilínea SVG independiente.
  * Recibe arrays ya decimados (preview) — no más de ~1500 puntos.
@@ -32,6 +14,10 @@ function smoothMovingAverage(values, windowSize) {
  * canal: [{ fraction, value, label, colorClass }]. `activeChannelPosition`
  * indica qué entrada de channelsData es la que corresponde a esos
  * picos, para poder situar el punto a la altura correcta.
+ *
+ * El suavizado (smoothdata) NO se hace aquí -es un efecto real sobre
+ * el cálculo, se aplica en el servidor antes de decimar para
+ * pantalla, así el gráfico coincide siempre con lo que se calcula-.
  */
 export default function WaveformView({
   channelsData,
@@ -45,7 +31,6 @@ export default function WaveformView({
   totalDurationMs = 0,
   strokeWidth = 1.5,
   chartStyle = "line", // "line" | "area"
-  smoothWindow = 0, // 0 = sin suavizar
 }) {
   const plotWidth = 1000;
   const marginLeft = 56;
@@ -58,13 +43,12 @@ export default function WaveformView({
   const paths = useMemo(() => {
     return channelsData.map(({ values, colorClass }) => {
       if (!values || values.length === 0) return { d: "", areaD: "", colorClass, smoothed: [], min: 0, max: 1 };
-      const smoothed = smoothWindow > 1 ? smoothMovingAverage(values, smoothWindow) : values;
-      const min = Math.min(...smoothed);
-      const max = Math.max(...smoothed);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
       const span = max - min || 1;
-      const stepX = plotWidth / (smoothed.length - 1 || 1);
+      const stepX = plotWidth / (values.length - 1 || 1);
 
-      const points = smoothed.map((v, i) => {
+      const points = values.map((v, i) => {
         const x = i * stepX;
         const norm = (v - min) / span; // 0..1
         const y = plotHeight - norm * (plotHeight - 20) - 10;
@@ -79,9 +63,9 @@ export default function WaveformView({
             ` L${points[points.length - 1][0].toFixed(1)},${plotHeight} Z`
           : "";
 
-      return { d, areaD, colorClass, smoothed, min, max };
+      return { d, areaD, colorClass, smoothed: values, min, max };
     });
-  }, [channelsData, plotHeight, smoothWindow]);
+  }, [channelsData, plotHeight]);
 
   // Altura Y (en el gráfico) de cada pico, calculada sobre la MISMA
   // curva que se está dibujando -así el punto queda exactamente sobre

@@ -77,10 +77,11 @@ export const api = {
     return request(`/desktops/${desktopId}/subjects/${subjectId}/analyze`, { method: "POST", form });
   },
 
-  channelPreview: (file, channels) => {
+  channelPreview: (file, channels, smooth = false) => {
     const form = new FormData();
     form.append("file", file);
     form.append("channels", JSON.stringify(channels));
+    form.append("smooth", smooth ? "true" : "false");
     return request("/channel-preview", { method: "POST", form });
   },
 };
