@@ -1,14 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./ResultsPanel.css";
 
-function ResultsTable({ channels, allMetrics }) {
+function ResultsTable({ channels, columnOrder, onReorder }) {
+  const [draggedMetric, setDraggedMetric] = useState(null);
+
+  function handleDrop(targetMetric) {
+    if (!draggedMetric || draggedMetric === targetMetric) return;
+    const next = columnOrder.filter((m) => m !== draggedMetric);
+    const targetIdx = next.indexOf(targetMetric);
+    next.splice(targetIdx, 0, draggedMetric);
+    onReorder(next);
+    setDraggedMetric(null);
+  }
+
   return (
     <table className="results-table">
       <thead>
         <tr>
           <th>Músculo</th>
-          {allMetrics.map((m) => (
-            <th key={m}>{m.replace(/_/g, " ")}</th>
+          {columnOrder.map((m) => (
+            <th
+              key={m}
+              draggable
+              className={`results-th-draggable ${draggedMetric === m ? "is-dragging" : ""}`}
+              onDragStart={() => setDraggedMetric(m)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop(m)}
+              onDragEnd={() => setDraggedMetric(null)}
+              title="Arrastra para reordenar la columna"
+            >
+              ⠿ {m.replace(/_/g, " ")}
+            </th>
           ))}
         </tr>
       </thead>
@@ -19,7 +41,7 @@ function ResultsTable({ channels, allMetrics }) {
               <span className={`channel-swatch channel-color-${i % 8}`} />
               {ch.channel_label} {ch.side ? `(${ch.side})` : ""}
             </td>
-            {allMetrics.map((m) => (
+            {columnOrder.map((m) => (
               <td key={m} className="mono">
                 {typeof ch.metrics[m] === "number" ? ch.metrics[m].toFixed(3) : "—"}
               </td>
@@ -34,6 +56,27 @@ function ResultsTable({ channels, allMetrics }) {
 export default function ResultsPanel({ channels, sessionLabel }) {
   const [view, setView] = useState("lista"); // "lista" | "tabla"
   const [expanded, setExpanded] = useState(false);
+  const [columnOrder, setColumnOrder] = useState([]);
+
+  // Todas las métricas presentes en cualquier canal, en el orden en que
+  // aparecen por primera vez. Se guarda en columnOrder para poder
+  // reordenarlas a mano (arrastrando) y que ese orden se mantenga
+  // aunque cambien los resultados -las métricas nuevas se añaden al
+  // final, sin tocar el orden que ya haya elegido el usuario-.
+  useEffect(() => {
+    if (!channels) return;
+    const seen = [];
+    for (const ch of channels) {
+      for (const metric of Object.keys(ch.metrics)) {
+        if (!seen.includes(metric)) seen.push(metric);
+      }
+    }
+    setColumnOrder((prev) => {
+      const kept = prev.filter((m) => seen.includes(m));
+      const added = seen.filter((m) => !kept.includes(m));
+      return [...kept, ...added];
+    });
+  }, [channels]);
 
   if (!channels || channels.length === 0) {
     return (
@@ -41,16 +84,6 @@ export default function ResultsPanel({ channels, sessionLabel }) {
         Ejecuta un análisis para ver los resultados aquí.
       </div>
     );
-  }
-
-  // Todas las métricas presentes en cualquier canal, en el orden en
-  // que aparecen por primera vez -para que las columnas de la tabla
-  // salgan siempre en el mismo orden-.
-  const allMetrics = [];
-  for (const ch of channels) {
-    for (const metric of Object.keys(ch.metrics)) {
-      if (!allMetrics.includes(metric)) allMetrics.push(metric);
-    }
   }
 
   return (
@@ -86,11 +119,12 @@ export default function ResultsPanel({ channels, sessionLabel }) {
         ))
       ) : (
         <>
+          <p className="results-reorder-hint">Arrastra las cabeceras (⠿) para reordenar las columnas.</p>
           <button type="button" className="results-expand-btn" onClick={() => setExpanded(true)}>
             ⛶ Ampliar tabla (para copiar y pegar)
           </button>
           <div className="results-table-wrap">
-            <ResultsTable channels={channels} allMetrics={allMetrics} />
+            <ResultsTable channels={channels} columnOrder={columnOrder} onReorder={setColumnOrder} />
           </div>
         </>
       )}
@@ -105,10 +139,11 @@ export default function ResultsPanel({ channels, sessionLabel }) {
               </button>
             </div>
             <p className="results-table-modal-hint">
-              Selecciona la tabla (Ctrl/Cmd+A dentro de ella) y cópiala directamente en Excel.
+              Arrastra las cabeceras (⠿) para reordenar las columnas. Luego selecciona la tabla (Ctrl/Cmd+A dentro
+              de ella) y cópiala directamente en Excel.
             </p>
             <div className="results-table-modal-body">
-              <ResultsTable channels={channels} allMetrics={allMetrics} />
+              <ResultsTable channels={channels} columnOrder={columnOrder} onReorder={setColumnOrder} />
             </div>
           </div>
         </div>

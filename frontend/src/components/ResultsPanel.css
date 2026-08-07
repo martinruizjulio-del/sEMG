@@ -62,6 +62,25 @@
   border-bottom: 1px solid var(--border-strong);
 }
 
+.results-th-draggable {
+  cursor: grab;
+  user-select: none;
+}
+
+.results-th-draggable:hover {
+  color: var(--accent);
+}
+
+.results-th-draggable.is-dragging {
+  opacity: 0.4;
+}
+
+.results-reorder-hint {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
 .results-table td {
   padding: 5px 10px 5px 0;
   color: var(--text-secondary);
