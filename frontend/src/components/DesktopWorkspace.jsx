@@ -22,6 +22,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   const [mode, setMode] = useState("raw");
   const [strokeWidth, setStrokeWidth] = useState(1.4);
   const [chartStyle, setChartStyle] = useState("line");
+  const [compareMode, setCompareMode] = useState(false);
 
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState(null);
@@ -143,7 +144,13 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         if (cancelled) return;
         const byIndex = {};
         data.channels.forEach((ch) => {
-          byIndex[ch.index] = { raw: ch.raw, filtered: ch.filtered, rms: ch.rms };
+          byIndex[ch.index] = {
+            raw: ch.raw,
+            filtered: ch.filtered,
+            rms: ch.rms,
+            rms_normal: ch.rms_normal,
+            rms_smoothed: ch.rms_smoothed,
+          };
         });
         setChannelPreviews(byIndex);
       })
@@ -353,6 +360,29 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     return { values, colorClass: `channel-color-${c.index % 8}` };
   });
 
+  // Modo comparación: superpone la curva SIN suavizar y CON suavizar
+  // del canal en foco (el que se esté editando a mano, o si no el
+  // primero seleccionado), para ver el contraste entre ambas.
+  const compareChannelIndex = manualPeakActiveIndex !== null ? manualPeakActiveIndex : channelSelection[0]?.index;
+  const compareChannelSel = channelSelection.find((c) => c.index === compareChannelIndex);
+  const compareData = (() => {
+    if (!compareMode || compareChannelIndex === undefined) return null;
+    const cached = channelPreviews[compareChannelIndex];
+    if (!cached?.rms_normal || !cached?.rms_smoothed) return null;
+    let normal = cached.rms_normal;
+    let smoothed = cached.rms_smoothed;
+    if (zoomedToSegment && normal.length > 0) {
+      const startIdx = Math.floor(segmentStart * normal.length);
+      const endIdx = Math.max(startIdx + 1, Math.ceil(segmentEnd * normal.length));
+      normal = normal.slice(startIdx, endIdx);
+      smoothed = smoothed.slice(startIdx, endIdx);
+    }
+    return [
+      { values: normal, colorClass: "channel-color-7" },
+      { values: smoothed, colorClass: "channel-color-0" },
+    ];
+  })();
+
   const activeChannelSel = channelSelection.find((c) => c.index === manualPeakActiveIndex);
   const activeChannelValues = (() => {
     if (manualPeakActiveIndex === null) return [];
@@ -460,11 +490,11 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           )}
 
           <WaveformView
-            channelsData={waveformData}
-            onManualPeakClick={manualPeakActiveIndex !== null ? handleManualPeakClick : undefined}
-            peakMarkers={peakMarkers}
+            channelsData={compareMode && compareData ? compareData : waveformData}
+            onManualPeakClick={!compareMode && manualPeakActiveIndex !== null ? handleManualPeakClick : undefined}
+            peakMarkers={compareMode ? [] : peakMarkers}
             activeChannelPosition={
-              manualPeakActiveIndex === null
+              compareMode || manualPeakActiveIndex === null
                 ? null
                 : channelSelection.findIndex((c) => c.index === manualPeakActiveIndex)
             }
@@ -474,6 +504,33 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             strokeWidth={strokeWidth}
             chartStyle={chartStyle}
           />
+
+          {channelSelection.length > 0 && (
+            <div className="compare-toggle-row">
+              <button
+                type="button"
+                className={`workspace-btn-ghost ${compareMode ? "is-active" : ""}`}
+                onClick={() => setCompareMode((v) => !v)}
+                title="Superpone la curva sin suavizar y con suavizar para ver el contraste"
+              >
+                📊 {compareMode ? "Ocultar comparación" : "Comparar normal vs. suavizado"}
+              </button>
+              {compareMode && compareChannelSel && (
+                <div className="compare-legend mono">
+                  <span className="compare-legend-item">
+                    <span className="compare-swatch compare-swatch-normal" /> Normal
+                  </span>
+                  <span className="compare-legend-item">
+                    <span className="compare-swatch compare-swatch-smoothed" /> Suavizado
+                  </span>
+                  <span className="compare-legend-channel">{compareChannelSel.label}</span>
+                </div>
+              )}
+              {compareMode && !compareData && (
+                <span className="compare-legend-channel">Selecciona un canal EMG para comparar.</span>
+              )}
+            </div>
+          )}
 
           <div className="chart-controls">
             <label className="stroke-width-control mono">

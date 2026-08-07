@@ -346,12 +346,17 @@ async def channel_preview(
     smooth: bool = Form(False),
     file: UploadFile = File(...),
 ):
-    """Devuelve, para los canales indicados, las tres versiones
-    decimadas (raw / filtrado / RMS) listas para graficar, calculadas
-    UNA sola vez por selección de canal — así el frontend puede
-    cambiar de modo (Raw/Filtrado/RMS) sin volver a subir el archivo.
-    Si `smooth` está activo, el RMS que se muestra es el ya suavizado
-    -así el gráfico coincide con lo que se está calculando de verdad-.
+    """Devuelve, para los canales indicados, las versiones decimadas
+    (raw / filtrado / RMS) listas para graficar, calculadas UNA sola
+    vez por selección de canal — así el frontend puede cambiar de modo
+    (Raw/Filtrado/RMS) sin volver a subir el archivo.
+
+    `rms` refleja el estado actual de `smooth` (para que el modo RMS
+    coincida con lo que se está calculando de verdad). Además, se
+    devuelven SIEMPRE `rms_normal` y `rms_smoothed` por separado -sin
+    y con smoothdata()-, para poder dibujar ambas curvas superpuestas
+    y comparar el contraste, independientemente de si el interruptor
+    de suavizado está activado o no.
     """
     try:
         channel_specs = json.loads(channels)
@@ -371,13 +376,19 @@ async def channel_preview(
             raise HTTPException(400, f"Canal índice {index} fuera de rango")
 
         raw_channel = data[:, index]
-        filtered, processed = _processed_signal(raw_channel, sensor_type, fs, rms_num_points, smooth=smooth)
+        # Se calcula una sola vez sin suavizar (evita filtrar dos veces)
+        # y, a partir de ahí, la versión suavizada como post-proceso.
+        filtered, processed_normal = _processed_signal(raw_channel, sensor_type, fs, rms_num_points, smooth=False)
+        processed_smoothed = smoothdata_auto(processed_normal) if len(processed_normal) >= 5 else processed_normal
+        processed = processed_smoothed if smooth else processed_normal
 
         out.append({
             "index": index,
             "raw": _decimate(clean_nan(raw_channel)),
             "filtered": _decimate(filtered),
             "rms": _decimate(processed) if sensor_type == "emg" else _decimate(filtered),
+            "rms_normal": _decimate(processed_normal) if sensor_type == "emg" else _decimate(filtered),
+            "rms_smoothed": _decimate(processed_smoothed) if sensor_type == "emg" else _decimate(filtered),
         })
 
     return {"fs": fs, "channels": out}
