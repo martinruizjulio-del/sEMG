@@ -198,6 +198,37 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
     }
   }
 
+  // Al activar "Manual" desde el panel de canales (para un único
+  // canal), primero se detectan sus picos automáticamente -si no los
+  // tenía ya- y luego se deja editar a mano; así siempre se parte de
+  // algo detectado, en vez de un lienzo vacío.
+  async function handleSetManualPeakActive(index) {
+    if (index === null) {
+      setManualPeakActiveIndex(null);
+      return;
+    }
+    setManualPeakActiveIndex(index);
+    if (manualPeaks[index]?.length) return; // ya tiene picos, no repetir la detección
+    const sel = channelSelection.find((c) => c.index === index);
+    if (!sel || !file || !activeSubjectId) return;
+    setError("");
+    try {
+      const config = {
+        channels: [{ index: sel.index, side: sel.side, sensor_type: sel.sensor_type }],
+        calculations: ["picos"],
+        peak_config: peakConfig,
+        save_results: false,
+        segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
+        segment_end_ms: segmentEnd < 1 ? segmentEnd * totalDurationMs : null,
+      };
+      const result = await api.analyze(desktop.id, activeSubjectId, file, config);
+      const times = result.channels?.[0]?.peak_times_ms || [];
+      setManualPeaks((prev) => ({ ...prev, [index]: times }));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   function handleClearManualPeaks(index) {
     setManualPeaks((prev) => {
       const next = { ...prev };
@@ -433,7 +464,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
                 calculationsIncludePicos={calculations.includes("picos")}
                 manualPeaks={manualPeaks}
                 manualPeakActiveIndex={manualPeakActiveIndex}
-                onSetManualPeakActive={setManualPeakActiveIndex}
+                onSetManualPeakActive={handleSetManualPeakActive}
                 onClearManualPeaks={handleClearManualPeaks}
               />
               <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />

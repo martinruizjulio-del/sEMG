@@ -78,7 +78,7 @@ export default function SessionHistory({ desktopId, subjects, refreshKey }) {
                           </td>
                           <td>{r.channel_label}</td>
                           <td className="mono">{r.metric.replace(/_/g, " ")}</td>
-                          <td className="mono">{r.value.toFixed(2)}</td>
+                          <td className="mono">{r.value.toFixed(3)}</td>
                         </tr>
                       ))}
                     </tbody>
