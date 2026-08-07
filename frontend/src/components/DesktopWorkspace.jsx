@@ -26,6 +26,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
 
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState(null);
+  const [previewingLive, setPreviewingLive] = useState(false);
   const [error, setError] = useState("");
   const [resultsRefreshKey, setResultsRefreshKey] = useState(0);
   const [showSequential, setShowSequential] = useState(false);
@@ -263,6 +264,44 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
       setAnalyzing(false);
     }
   }
+
+  // Vista previa en vivo: cada vez que cambian los cálculos elegidos,
+  // los canales, los parámetros de picos o el recorte, se recalcula
+  // automáticamente (sin guardar nada) y se muestra en la tabla de
+  // resultados. El botón "Analizar y guardar" solo hace falta para
+  // persistirlo de verdad como una sesión.
+  useEffect(() => {
+    if (!file || !activeSubjectId || channelSelection.length === 0 || calculations.length === 0) return;
+    if (manualPeakActiveIndex !== null) return; // no interferir mientras se colocan picos a mano
+    const timer = setTimeout(async () => {
+      setPreviewingLive(true);
+      try {
+        const config = {
+          channels: channelSelection.map((c) => ({
+            index: c.index,
+            side: c.side,
+            sensor_type: c.sensor_type,
+            manual_peaks_ms: manualPeaks[c.index]?.length ? manualPeaks[c.index] : null,
+          })),
+          calculations,
+          peak_config: peakConfig,
+          save_results: false,
+          segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
+          segment_end_ms: segmentEnd < 1 ? segmentEnd * totalDurationMs : null,
+        };
+        const result = await api.analyze(desktop.id, activeSubjectId, file, config);
+        setAnalyzeResult(result);
+        setError("");
+      } catch {
+        // La vista previa en vivo falla en silencio -si hay un error de
+        // verdad, ya se verá al pulsar "Analizar y guardar".
+      } finally {
+        setPreviewingLive(false);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, segmentStart, segmentEnd, manualPeakActiveIndex]);
 
   async function handleExport() {
     const blob = await api.exportDesktop(desktop.id);
@@ -505,6 +544,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
 
           {/* La tabla de resultados va creciendo aquí, en el centro,
               según se van efectuando análisis. */}
+          {previewingLive && <p className="preview-loading mono">recalculando…</p>}
           <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
 
           <BatchImport
