@@ -51,7 +51,7 @@ class FilterSpec:
     force_order: int = 4
 
 
-def _clean_nan(data: np.ndarray) -> np.ndarray:
+def clean_nan(data: np.ndarray) -> np.ndarray:
     """Limpieza de NaN por interpolación lineal (huecos internos) y
     relleno hacia delante/atrás en los extremos -requerido para
     plataformas de fuerza, que a menudo registran huecos-."""
@@ -110,7 +110,7 @@ def apply_filter(data: np.ndarray, spec: FilterSpec) -> np.ndarray:
     # cualquier tipo de sensor, no solo en plataformas de fuerza -se
     # interpolan linealmente antes de filtrar, para no romper el
     # filtro ni la envolvente RMS-.
-    data = _clean_nan(data)
+    data = clean_nan(data)
     sos = design_filter(spec)
     if sos is None:
         return data

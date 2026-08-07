@@ -14,7 +14,7 @@ from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse, ChannelAnalysis
 from app.parsers.asc_parser import parse_asc
 from app.parsers.emt_parser import parse_emt
 from app.parsers.csv_txt_parser import parse_tabular
-from app.processing.filters import FilterSpec, apply_filter
+from app.processing.filters import FilterSpec, apply_filter, clean_nan
 from app.processing.rms import rms_emg
 from app.processing.peaks import detect_peaks, manual_peaks, PeakParams
 from app.processing.frequency import dominant_frequency
@@ -358,7 +358,7 @@ async def channel_preview(
 
         out.append({
             "index": index,
-            "raw": _decimate(raw_channel),
+            "raw": _decimate(clean_nan(raw_channel)),
             "filtered": _decimate(filtered),
             "rms": _decimate(processed) if sensor_type == "emg" else _decimate(filtered),
         })

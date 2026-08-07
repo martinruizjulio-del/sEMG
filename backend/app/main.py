@@ -27,6 +27,7 @@ import numpy as np
 from app.parsers.asc_parser import parse_asc
 from app.parsers.emt_parser import parse_emt
 from app.parsers.csv_txt_parser import parse_tabular
+from app.processing.filters import clean_nan
 from app.db.session import Base, engine
 from app.db import models  # noqa: F401 (registra los modelos en Base)
 from app.routers import auth, desktops, analyze
@@ -126,7 +127,7 @@ async def parse_preview(file: UploadFile = File(...)):
         data = data.reshape(-1, 1)
 
     max_channels_preview = 8
-    preview = [_decimate(data[:, c]) for c in range(min(data.shape[1], max_channels_preview))]
+    preview = [_decimate(clean_nan(data[:, c])) for c in range(min(data.shape[1], max_channels_preview))]
 
     return {
         "format": fmt,
