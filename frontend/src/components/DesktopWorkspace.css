@@ -136,11 +136,39 @@
   gap: 8px;
   font-size: 11px;
   color: var(--text-tertiary);
-  margin-top: -8px;
 }
 
 .stroke-width-control input {
   width: 120px;
+}
+
+.chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: -8px;
+}
+
+.chart-style-switch {
+  display: flex;
+  gap: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.chart-style-switch button {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.chart-style-switch button.is-active {
+  background: var(--accent-dim);
+  color: var(--accent-strong);
 }
 
 .analyze-row {

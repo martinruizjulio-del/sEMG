@@ -31,6 +31,20 @@
 .waveform-trace.channel-color-6 { stroke: var(--ch-7); }
 .waveform-trace.channel-color-7 { stroke: var(--ch-8); }
 
+.waveform-area {
+  stroke: none;
+  opacity: 0.22;
+}
+
+.waveform-area.channel-color-0 { fill: var(--ch-1); }
+.waveform-area.channel-color-1 { fill: var(--ch-2); }
+.waveform-area.channel-color-2 { fill: var(--ch-3); }
+.waveform-area.channel-color-3 { fill: var(--ch-4); }
+.waveform-area.channel-color-4 { fill: var(--ch-5); }
+.waveform-area.channel-color-5 { fill: var(--ch-6); }
+.waveform-area.channel-color-6 { fill: var(--ch-7); }
+.waveform-area.channel-color-7 { fill: var(--ch-8); }
+
 .waveform-axis-title {
   fill: var(--text-tertiary);
   font-size: 11px;

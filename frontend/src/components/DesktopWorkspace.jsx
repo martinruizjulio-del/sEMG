@@ -22,6 +22,8 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
   const [channelSelection, setChannelSelection] = useState([]);
   const [mode, setMode] = useState("raw");
   const [strokeWidth, setStrokeWidth] = useState(1.4);
+  const [chartStyle, setChartStyle] = useState("line");
+  const [smoothWindow, setSmoothWindow] = useState(0);
 
   const [calculations, setCalculations] = useState(["media", "maximo", "picos"]);
   const [peakConfig, setPeakConfig] = useState({ n_peaks: null, min_peak_distance_ms: null });
@@ -358,20 +360,46 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated }) {
             segmentEndFraction={zoomedToSegment ? 1 : segmentEnd}
             totalDurationMs={zoomedToSegment ? (segmentEnd - segmentStart) * totalDurationMs : totalDurationMs}
             strokeWidth={strokeWidth}
+            chartStyle={chartStyle}
+            smoothWindow={smoothWindow}
           />
 
-          <label className="stroke-width-control mono">
-            Grosor de línea
-            <input
-              type="range"
-              min="0.5"
-              max="4"
-              step="0.1"
-              value={strokeWidth}
-              onChange={(e) => setStrokeWidth(Number(e.target.value))}
-            />
-            {strokeWidth.toFixed(1)}
-          </label>
+          <div className="chart-controls">
+            <label className="stroke-width-control mono">
+              Grosor de línea
+              <input
+                type="range"
+                min="0.5"
+                max="4"
+                step="0.1"
+                value={strokeWidth}
+                onChange={(e) => setStrokeWidth(Number(e.target.value))}
+              />
+              {strokeWidth.toFixed(1)}
+            </label>
+
+            <div className="chart-style-switch">
+              <button type="button" className={chartStyle === "line" ? "is-active" : ""} onClick={() => setChartStyle("line")}>
+                Línea
+              </button>
+              <button type="button" className={chartStyle === "area" ? "is-active" : ""} onClick={() => setChartStyle("area")}>
+                Área
+              </button>
+            </div>
+
+            <label className="stroke-width-control mono">
+              Suavizado
+              <input
+                type="range"
+                min="0"
+                max="61"
+                step="2"
+                value={smoothWindow}
+                onChange={(e) => setSmoothWindow(Number(e.target.value))}
+              />
+              {smoothWindow > 1 ? `${smoothWindow} pts` : "sin suavizar"}
+            </label>
+          </div>
 
           {preview && (
             <SegmentSlider

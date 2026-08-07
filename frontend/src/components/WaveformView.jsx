@@ -1,6 +1,24 @@
 import { useMemo, useRef } from "react";
 import "./WaveformView.css";
 
+// Suavizado por media móvil, equivalente al método por defecto de
+// smoothdata() de MATLAB ('movmean'): cada punto se sustituye por la
+// media de una ventana centrada de tamaño `windowSize` (en muestras
+// de la señal ya decimada para pantalla).
+function smoothMovingAverage(values, windowSize) {
+  if (windowSize <= 1) return values;
+  const half = Math.floor(windowSize / 2);
+  const out = Array.from({ length: values.length });
+  for (let i = 0; i < values.length; i++) {
+    const start = Math.max(0, i - half);
+    const end = Math.min(values.length, i + half + 1);
+    let sum = 0;
+    for (let j = start; j < end; j++) sum += values[j];
+    out[i] = sum / (end - start);
+  }
+  return out;
+}
+
 /**
  * Traza cada canal seleccionado como una polilínea SVG independiente.
  * Recibe arrays ya decimados (preview) — no más de ~1500 puntos.
@@ -19,6 +37,8 @@ export default function WaveformView({
   segmentEndFraction = 1,
   totalDurationMs = 0,
   strokeWidth = 1.5,
+  chartStyle = "line", // "line" | "area"
+  smoothWindow = 0, // 0 = sin suavizar
 }) {
   const plotWidth = 1000;
   const marginLeft = 56;
@@ -30,24 +50,31 @@ export default function WaveformView({
 
   const paths = useMemo(() => {
     return channelsData.map(({ values, colorClass }) => {
-      if (!values || values.length === 0) return { d: "", colorClass };
-      const min = Math.min(...values);
-      const max = Math.max(...values);
+      if (!values || values.length === 0) return { d: "", areaD: "", colorClass };
+      const smoothed = smoothWindow > 1 ? smoothMovingAverage(values, smoothWindow) : values;
+      const min = Math.min(...smoothed);
+      const max = Math.max(...smoothed);
       const span = max - min || 1;
-      const stepX = plotWidth / (values.length - 1 || 1);
+      const stepX = plotWidth / (smoothed.length - 1 || 1);
 
-      const d = values
-        .map((v, i) => {
-          const x = i * stepX;
-          const norm = (v - min) / span; // 0..1
-          const y = plotHeight - norm * (plotHeight - 20) - 10;
-          return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-        })
-        .join(" ");
+      const points = smoothed.map((v, i) => {
+        const x = i * stepX;
+        const norm = (v - min) / span; // 0..1
+        const y = plotHeight - norm * (plotHeight - 20) - 10;
+        return [x, y];
+      });
 
-      return { d, colorClass };
+      const d = points.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+      const areaD =
+        points.length > 0
+          ? `M${points[0][0].toFixed(1)},${plotHeight} ` +
+            points.map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(" ") +
+            ` L${points[points.length - 1][0].toFixed(1)},${plotHeight} Z`
+          : "";
+
+      return { d, areaD, colorClass };
     });
-  }, [channelsData, plotHeight]);
+  }, [channelsData, plotHeight, smoothWindow]);
 
   function handleClick(e) {
     if (!onManualPeakClick || !svgRef.current) return;
@@ -86,6 +113,10 @@ export default function WaveformView({
 
         <g transform={`translate(${marginLeft}, 0)`}>
           <line x1="0" y1={plotHeight / 2} x2={plotWidth} y2={plotHeight / 2} className="waveform-baseline" />
+          {chartStyle === "area" &&
+            paths.map((p, i) => (
+              <path key={`area-${i}`} d={p.areaD} className={`waveform-area ${p.colorClass}`} />
+            ))}
           {paths.map((p, i) => (
             <path
               key={i}
