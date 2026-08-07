@@ -27,6 +27,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState(null);
   const [previewingLive, setPreviewingLive] = useState(false);
+  const [detectingPeaks, setDetectingPeaks] = useState(false);
   const [error, setError] = useState("");
   const [resultsRefreshKey, setResultsRefreshKey] = useState(0);
   const [showSequential, setShowSequential] = useState(false);
@@ -198,6 +199,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   async function handleDetectPeaks() {
     if (!file || !activeSubjectId || channelSelection.length === 0) return;
     setError("");
+    setDetectingPeaks(true);
     try {
       const config = {
         channels: channelSelection.map((c) => ({ index: c.index, side: c.side, sensor_type: c.sensor_type })),
@@ -219,6 +221,8 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
       if (firstIndex !== undefined) setManualPeakActiveIndex(Number(firstIndex));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDetectingPeaks(false);
     }
   }
 
@@ -244,6 +248,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     const sel = channelSelection.find((c) => c.index === index);
     if (!sel || !file || !activeSubjectId) return;
     setError("");
+    setDetectingPeaks(true);
     try {
       const config = {
         channels: [{ index: sel.index, side: sel.side, sensor_type: sel.sensor_type }],
@@ -259,6 +264,8 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
       setManualPeaks((prev) => ({ ...prev, [index]: times }));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDetectingPeaks(false);
     }
   }
 
@@ -301,13 +308,12 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   }
 
   // Vista previa en vivo: cada vez que cambian los cálculos elegidos,
-  // los canales, los parámetros de picos o el recorte, se recalcula
-  // automáticamente (sin guardar nada) y se muestra en la tabla de
-  // resultados. El botón "Analizar y guardar" solo hace falta para
-  // persistirlo de verdad como una sesión.
+  // los canales, los parámetros de picos, el recorte, o se añade/quita
+  // un pico a mano, se recalcula automáticamente (sin guardar nada) y
+  // se muestra en la tabla de resultados. El botón "Guardar" solo
+  // hace falta para persistirlo de verdad como una sesión.
   useEffect(() => {
     if (!file || !activeSubjectId || channelSelection.length === 0 || calculations.length === 0) return;
-    if (manualPeakActiveIndex !== null) return; // no interferir mientras se colocan picos a mano
     const timer = setTimeout(async () => {
       setPreviewingLive(true);
       try {
@@ -337,7 +343,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     }, 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex]);
+  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
 
   async function handleExport() {
     const blob = await api.exportDesktop(desktop.id);
@@ -471,6 +477,11 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             </p>
           )}
           {error && <p className="workspace-error">{error}</p>}
+          {detectingPeaks && (
+            <p className="upload-status mono">
+              Detectando picos… si el servidor llevaba un rato sin usarse, puede tardar hasta 50s.
+            </p>
+          )}
 
           {manualPeakActiveIndex !== null && (
             <div className="manual-peak-toolbar">

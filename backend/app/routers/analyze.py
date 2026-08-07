@@ -193,7 +193,14 @@ async def analyze_file(
                     result = detect_peaks(processed, fs=fs, params=params)
                 peak_indices = result.indices.tolist()
                 peak_times = result.times_ms.tolist()
+                peak_values = result.values.tolist()
                 metrics["num_picos"] = len(peak_indices)
+                # Valor de cada pico individual, en el orden en que
+                # aparecen en el tiempo -así en la tabla de resultados
+                # se ve "pico 1", "pico 2"... con su valor real, no
+                # solo el recuento-.
+                for i, v in enumerate(peak_values, start=1):
+                    metrics[f"pico_{i}"] = float(v)
                 # Lapso: diferencia entre el pico más tardío y el más
                 # temprano DENTRO de este archivo (no compara con otros
                 # archivos -eso se decide luego, al elegir qué sesión
