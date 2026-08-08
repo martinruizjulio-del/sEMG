@@ -26,6 +26,8 @@ export default function DesktopWorkspace({
   onChangeSmooth,
   coactivationConfig,
   onChangeCoactivationConfig,
+  stepFrequencyConfig,
+  onChangeStepFrequencyConfig,
 }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
@@ -63,6 +65,13 @@ export default function DesktopWorkspace({
   const parsedCoactivationConfig =
     coactivationConfig && coactivationConfig.channelA !== null && coactivationConfig.channelB !== null
       ? { channel_a_index: coactivationConfig.channelA, channel_b_index: coactivationConfig.channelB }
+      : null;
+
+  // A diferencia de coactivación, aquí el canal B es opcional (un solo
+  // canal ya es un cálculo válido).
+  const parsedStepFrequencyConfig =
+    stepFrequencyConfig && stepFrequencyConfig.channelA !== null
+      ? { channel_a_index: stepFrequencyConfig.channelA, channel_b_index: stepFrequencyConfig.channelB ?? null }
       : null;
 
   const [file, setFile] = useState(null);
@@ -545,6 +554,7 @@ export default function DesktopWorkspace({
         peak_window_config: parsedPeakWindowConfig,
         time_bins_config: parsedTimeBinsConfig,
         coactivation_config: parsedCoactivationConfig,
+        step_frequency_config: parsedStepFrequencyConfig,
         smooth,
         save_results: true,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -582,6 +592,7 @@ export default function DesktopWorkspace({
           peak_window_config: parsedPeakWindowConfig,
           time_bins_config: parsedTimeBinsConfig,
           coactivation_config: parsedCoactivationConfig,
+          step_frequency_config: parsedStepFrequencyConfig,
           smooth,
           save_results: false,
           segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -599,7 +610,7 @@ export default function DesktopWorkspace({
     }, 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, peakWindowConfig, timeBinsConfig, coactivationConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
+  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, peakWindowConfig, timeBinsConfig, coactivationConfig, stepFrequencyConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
 
   async function handleExport() {
     const blob = await api.exportDesktop(desktop.id);
@@ -980,6 +991,9 @@ export default function DesktopWorkspace({
                 calculationsIncludeCoactivation={calculations.includes("coactivacion")}
                 coactivationConfig={coactivationConfig}
                 onChangeCoactivationConfig={onChangeCoactivationConfig}
+                calculationsIncludeStepFrequency={calculations.includes("frecuencia_paso")}
+                stepFrequencyConfig={stepFrequencyConfig}
+                onChangeStepFrequencyConfig={onChangeStepFrequencyConfig}
               />
             </aside>
           </>

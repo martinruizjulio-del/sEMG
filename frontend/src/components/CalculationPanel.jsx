@@ -62,7 +62,7 @@ export default function CalculationPanel({
           que <code>smoothdata()</code> en MATLAB, con ventana automática-.
         </p>
       )}
-      {(calculations.includes("area") || calculations.includes("integral") || calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("orden_activacion") || calculations.includes("coactivacion")) && (
+      {(calculations.includes("area") || calculations.includes("integral") || calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("orden_activacion") || calculations.includes("coactivacion") || calculations.includes("frecuencia_paso")) && (
         <p className="calc-hint">
           {(calculations.includes("area") || calculations.includes("integral")) && (
             <>Área e Integral: dos formas de medir lo mismo (superficie bajo la curva), sobre la señal ya
@@ -79,7 +79,10 @@ export default function CalculationPanel({
             <>Orden de activación: necesita que "Picos" también esté marcado -usa el primer pico de cada canal para ordenarlos-. </>
           )}
           {calculations.includes("coactivacion") && (
-            <>Coactivación: elige los dos canales a comparar en el panel de Canales, a la derecha.</>
+            <>Coactivación: elige los dos canales a comparar en el panel de Canales, a la derecha. </>
+          )}
+          {calculations.includes("frecuencia_paso") && (
+            <>Frecuencia de paso: pasos por segundo (no es frecuencia espectral en Hz), contando los picos detectados. Elige uno o dos canales (p.ej. gemelo derecho e izquierdo) en el panel de Canales, a la derecha.</>
           )}
         </p>
       )}
@@ -111,6 +114,16 @@ export default function CalculationPanel({
             title="Media y máximo en una ventana de tiempo antes y/o después de cada pico"
           >
             Ventana por pico
+          </button>
+        )}
+        {calculations.includes("picos") && (
+          <button
+            type="button"
+            className={`calc-chip ${calculations.includes("frecuencia_paso") ? "is-active" : ""}`}
+            onClick={() => toggle("frecuencia_paso")}
+            title="Cuenta cuántos picos (pasos/zancadas) hay por segundo -no es frecuencia espectral en Hz-"
+          >
+            Frecuencia de paso
           </button>
         )}
       </div>

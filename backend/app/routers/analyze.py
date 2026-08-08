@@ -277,6 +277,7 @@ async def analyze_file(
         channel_records.append({
             "index": ch.index, "label": label, "side": ch.side, "metrics": metrics,
             "peak_times_ms": peak_times,
+            "n_samples": len(processed),
             # Solo se guarda si hace falta para coactivación -evita usar
             # memoria de más en análisis grandes que no la necesiten-.
             "processed": processed if "coactivacion" in request.calculations else None,
@@ -304,6 +305,9 @@ async def analyze_file(
 
     if "coactivacion" in request.calculations and request.coactivation_config:
         _add_coactivation_index(channel_records, request.coactivation_config)
+
+    if "frecuencia_paso" in request.calculations and request.step_frequency_config:
+        _add_step_frequency(channel_records, request.step_frequency_config, fs)
 
     # --- Generar nombres de variable definitivos y guardar en BD ---
 
@@ -442,6 +446,40 @@ def _add_coactivation_index(channel_records: list[dict], cfg) -> None:
 
     partner_label = base_muscle_name(rec_b["label"])
     rec_a["metrics"][f"coactivacion_vs_{partner_label}_pct"] = ci
+
+
+def _add_step_frequency(channel_records: list[dict], cfg, fs: float) -> None:
+    """Frecuencia de paso: cuenta los picos (pasos/zancadas) detectados
+    en uno o dos canales -p.ej. gemelo derecho y/o izquierdo- y los
+    divide entre la duración analizada en segundos. NO es una
+    frecuencia espectral en Hz, es un recuento de eventos por segundo
+    (pasos/s), típico en análisis de carrera/marcha."""
+    rec_a = next((r for r in channel_records if r["index"] == cfg.channel_a_index), None)
+    if not rec_a:
+        return
+
+    total_peaks = rec_a["metrics"].get("num_picos")
+    if total_peaks is None:
+        return  # el canal A no tiene "Picos" calculado
+    duration_s = rec_a["n_samples"] / fs
+
+    label_parts = [rec_a["label"]]
+    if cfg.channel_b_index is not None:
+        rec_b = next((r for r in channel_records if r["index"] == cfg.channel_b_index), None)
+        if rec_b and rec_b["metrics"].get("num_picos") is not None:
+            total_peaks += rec_b["metrics"]["num_picos"]
+            label_parts.append(rec_b["label"])
+
+    if duration_s <= 0:
+        return
+
+    if len(label_parts) > 1:
+        partner_label = base_muscle_name(label_parts[1])
+        metric_name = f"frecuencia_paso_con_{partner_label}_pasos_s"
+    else:
+        metric_name = "frecuencia_paso_pasos_s"
+
+    rec_a["metrics"][metric_name] = total_peaks / duration_s
 
 
 @preview_router.post("/channel-preview")

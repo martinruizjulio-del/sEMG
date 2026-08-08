@@ -44,16 +44,28 @@ class CoactivationConfig(BaseModel):
     channel_b_index: Optional[int] = None
 
 
+class StepFrequencyConfig(BaseModel):
+    """Frecuencia de paso: cuenta cuántos picos (pasos/zancadas) hay
+    por segundo -no es frecuencia espectral en Hz-. Se puede elegir un
+    solo canal (p.ej. gemelo derecho) o dos (derecho + izquierdo, para
+    la cadencia total combinando ambos pies). Necesita que "Picos"
+    también esté seleccionado."""
+    channel_a_index: Optional[int] = None
+    channel_b_index: Optional[int] = None  # opcional: combina los picos de ambos canales
+
+
 class AnalyzeRequest(BaseModel):
     channels: list[ChannelSelection]  # qué canales analizar y cómo tratarlos
     calculations: list[Literal[
-        "media", "maximo", "mediana", "area", "integral", "picos", "lapso", "picos_ventana", "tramos", "frecuencia", "fatiga",
+        "media", "maximo", "mediana", "area", "integral", "picos", "lapso", "picos_ventana", "tramos",
+        "frecuencia", "frecuencia_paso", "fatiga",
         "ratio_bilateral", "normalizacion", "orden_activacion", "coactivacion",
     ]]
     peak_config: Optional[PeakConfig] = None
     peak_window_config: Optional[PeakWindowConfig] = None
     time_bins_config: Optional[TimeBinsConfig] = None
     coactivation_config: Optional[CoactivationConfig] = None
+    step_frequency_config: Optional[StepFrequencyConfig] = None
     rms_num_points: int = 51
     # Suavizado tipo smoothdata() de MATLAB (ventana automática),
     # aplicado tras el RMS y antes de calcular media/máximo/picos/etc.

@@ -33,6 +33,9 @@ export default function ChannelPanel({
   calculationsIncludeCoactivation = false,
   coactivationConfig,
   onChangeCoactivationConfig,
+  calculationsIncludeStepFrequency = false,
+  stepFrequencyConfig,
+  onChangeStepFrequencyConfig,
 }) {
   function updateChannel(index, patch) {
     onChange(selection.map((c) => (c.index === index ? { ...c, ...patch } : c)));
@@ -208,6 +211,55 @@ export default function ChannelPanel({
           </div>
           <p className="calc-hint">
             CI = 2 × área común / área total, en %. 100% = coactivación total, 0% = sin ninguna superposición.
+          </p>
+        </div>
+      )}
+      {calculationsIncludeStepFrequency && selection.length >= 1 && stepFrequencyConfig && (
+        <div className="coactivation-config">
+          <div className="channel-panel-section-label">Frecuencia de paso</div>
+          <div className="coactivation-selects">
+            <label>
+              Canal A
+              <select
+                value={stepFrequencyConfig.channelA ?? ""}
+                onChange={(e) =>
+                  onChangeStepFrequencyConfig({
+                    ...stepFrequencyConfig,
+                    channelA: e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+              >
+                <option value="">—</option>
+                {selection.map((s) => (
+                  <option key={s.index} value={s.index}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Canal B (opcional, combina ambos)
+              <select
+                value={stepFrequencyConfig.channelB ?? ""}
+                onChange={(e) =>
+                  onChangeStepFrequencyConfig({
+                    ...stepFrequencyConfig,
+                    channelB: e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+              >
+                <option value="">— (solo canal A)</option>
+                {selection.map((s) => (
+                  <option key={s.index} value={s.index}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="calc-hint">
+            Cuenta los picos detectados en el canal A (y B si lo eliges) y los divide entre la duración analizada,
+            en pasos por segundo.
           </p>
         </div>
       )}

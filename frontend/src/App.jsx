@@ -31,6 +31,9 @@ function AppShell() {
   // Coactivación (Falconer-Winter): compara dos canales elegidos en
   // el panel de Canales.
   const [coactivationConfig, setCoactivationConfig] = useState({ channelA: null, channelB: null });
+  // Frecuencia de paso: cuenta pasos/zancadas por segundo a partir de
+  // los picos de uno o dos canales -p.ej. gemelo derecho e izquierdo-.
+  const [stepFrequencyConfig, setStepFrequencyConfig] = useState({ channelA: null, channelB: null });
   // Suavizado tipo smoothdata() de MATLAB: es sí/no (sin niveles
   // intermedios), y afecta de verdad a los cálculos -no es solo un
   // efecto visual-, aplicado tras el RMS, igual que en el script de
@@ -107,6 +110,8 @@ function AppShell() {
           onChangeSmooth={setSmooth}
           coactivationConfig={coactivationConfig}
           onChangeCoactivationConfig={setCoactivationConfig}
+          stepFrequencyConfig={stepFrequencyConfig}
+          onChangeStepFrequencyConfig={setStepFrequencyConfig}
         />
       ) : (
         <div className="app-empty-state">
