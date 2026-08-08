@@ -84,9 +84,4 @@ export const api = {
     form.append("smooth", smooth ? "true" : "false");
     return request("/channel-preview", { method: "POST", form });
   },
-
-  aiConfigure: (prompt, availableChannels) =>
-    request("/ai/configure", { method: "POST", json: { prompt, available_channels: availableChannels } }),
-
-  aiInterpret: (channels) => request("/ai/interpret", { method: "POST", json: { channels } }),
 };

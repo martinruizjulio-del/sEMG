@@ -99,15 +99,12 @@ function AppShell() {
           desktop={activeDesktop}
           onDesktopUpdated={handleDesktopUpdated}
           calculations={calculations}
-          onChangeCalculations={setCalculations}
           peakConfig={peakConfig}
-          onChangePeakConfig={setPeakConfig}
           peakWindowConfig={peakWindowConfig}
           timeBinsConfig={timeBinsConfig}
           detectPeaksSignal={detectPeaksSignal}
           manualPlaceSignal={manualPlaceSignal}
           smooth={smooth}
-          onChangeSmooth={setSmooth}
           coactivationConfig={coactivationConfig}
           onChangeCoactivationConfig={setCoactivationConfig}
           stepFrequencyConfig={stepFrequencyConfig}

@@ -30,7 +30,7 @@ from app.parsers.csv_txt_parser import parse_tabular
 from app.processing.filters import clean_nan
 from app.db.session import Base, engine
 from app.db import models  # noqa: F401 (registra los modelos en Base)
-from app.routers import auth, desktops, analyze, ai
+from app.routers import auth, desktops, analyze
 from app.routers.auth import get_current_user
 
 Base.metadata.create_all(bind=engine)
@@ -82,7 +82,6 @@ app.include_router(auth.router)
 app.include_router(desktops.router)
 app.include_router(analyze.router)
 app.include_router(analyze.preview_router)
-app.include_router(ai.router)
 
 
 @app.get("/health")
