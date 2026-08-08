@@ -12,6 +12,8 @@ export default function DesktopList({
   onChangeCalculations,
   peakConfig,
   onChangePeakConfig,
+  peakWindowConfig,
+  onChangePeakWindowConfig,
   onDetectPeaks,
   onManualPlace,
   smooth,
@@ -83,6 +85,8 @@ export default function DesktopList({
             onChangeCalculations={onChangeCalculations}
             peakConfig={peakConfig}
             onChangePeakConfig={onChangePeakConfig}
+            peakWindowConfig={peakWindowConfig}
+            onChangePeakWindowConfig={onChangePeakWindowConfig}
             onDetectPeaks={onDetectPeaks}
             onManualPlace={onManualPlace}
             smooth={smooth}

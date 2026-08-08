@@ -208,6 +208,27 @@ async def analyze_file(
                 # aparte de "Picos": solo se guarda si se pide.
                 if "lapso" in request.calculations and peak_times:
                     metrics["lapso_ms"] = max(peak_times) - min(peak_times)
+                # Ventanas de activación relativas a cada pico -media y
+                # máximo en los N ms anteriores y/o posteriores a cada
+                # pico, para tantos márgenes como se hayan pedido-.
+                pwc = request.peak_window_config
+                if "picos_ventana" in request.calculations and pwc and pwc.margins_ms and peak_indices:
+                    for peak_num, idx in enumerate(peak_indices, start=1):
+                        for margin_ms in pwc.margins_ms:
+                            margin_samples = int(round((margin_ms / 1000.0) * fs))
+                            margin_label = f"{margin_ms:g}ms"
+                            if pwc.before:
+                                start = max(0, idx - margin_samples)
+                                window = processed[start:idx + 1]
+                                if len(window) > 0:
+                                    metrics[f"pico_{peak_num}_pre_{margin_label}_media"] = float(np.mean(window))
+                                    metrics[f"pico_{peak_num}_pre_{margin_label}_maximo"] = float(np.max(window))
+                            if pwc.after:
+                                end = min(len(processed), idx + margin_samples + 1)
+                                window = processed[idx:end]
+                                if len(window) > 0:
+                                    metrics[f"pico_{peak_num}_post_{margin_label}_media"] = float(np.mean(window))
+                                    metrics[f"pico_{peak_num}_post_{margin_label}_maximo"] = float(np.max(window))
             elif calc == "frecuencia":
                 notched = apply_notch(processed_filtered, fs=fs)
                 metrics["frecuencia_dominante_hz"] = dominant_frequency(notched, fs=fs)

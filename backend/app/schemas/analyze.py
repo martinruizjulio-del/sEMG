@@ -19,13 +19,22 @@ class PeakConfig(BaseModel):
     min_peak_distance_ms: Optional[float] = None
 
 
+class PeakWindowConfig(BaseModel):
+    """Ventanas de activación relativas a cada pico -p.ej. media y
+    máximo en los 25ms anteriores y/o posteriores a cada pico-."""
+    margins_ms: list[float] = []
+    before: bool = True
+    after: bool = True
+
+
 class AnalyzeRequest(BaseModel):
     channels: list[ChannelSelection]  # qué canales analizar y cómo tratarlos
     calculations: list[Literal[
-        "media", "maximo", "mediana", "picos", "lapso", "frecuencia", "fatiga",
+        "media", "maximo", "mediana", "picos", "lapso", "picos_ventana", "frecuencia", "fatiga",
         "ratio_bilateral", "normalizacion", "orden_activacion",
     ]]
     peak_config: Optional[PeakConfig] = None
+    peak_window_config: Optional[PeakWindowConfig] = None
     rms_num_points: int = 51
     # Suavizado tipo smoothdata() de MATLAB (ventana automática),
     # aplicado tras el RMS y antes de calcular media/máximo/picos/etc.

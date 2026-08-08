@@ -11,9 +11,22 @@ import SequentialMode from "./SequentialMode";
 import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, detectPeaksSignal, manualPlaceSignal, smooth }) {
+export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, peakWindowConfig, detectPeaksSignal, manualPlaceSignal, smooth }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
+
+  // Convierte el texto "25, 50, 100" en la lista numérica que espera
+  // el backend, ignorando entradas vacías o no numéricas.
+  const parsedPeakWindowConfig = peakWindowConfig
+    ? {
+        margins_ms: (peakWindowConfig.marginsText || "")
+          .split(",")
+          .map((s) => parseFloat(s.trim()))
+          .filter((n) => !isNaN(n) && n > 0),
+        before: peakWindowConfig.before,
+        after: peakWindowConfig.after,
+      }
+    : null;
 
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null); // { fs, channels, preview: [...] }
@@ -226,6 +239,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         channels: channelSelection.map((c) => ({ index: c.index, side: c.side, sensor_type: c.sensor_type })),
         calculations: ["picos"],
         peak_config: peakConfig,
+        peak_window_config: parsedPeakWindowConfig,
         smooth,
         save_results: false,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -288,6 +302,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         channels: [{ index: sel.index, side: sel.side, sensor_type: sel.sensor_type }],
         calculations: ["picos"],
         peak_config: peakConfig,
+        peak_window_config: parsedPeakWindowConfig,
         smooth,
         save_results: false,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -326,6 +341,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         })),
         calculations,
         peak_config: peakConfig,
+        peak_window_config: parsedPeakWindowConfig,
         smooth,
         save_results: true,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -360,6 +376,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           })),
           calculations,
           peak_config: peakConfig,
+          peak_window_config: parsedPeakWindowConfig,
           smooth,
           save_results: false,
           segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -377,7 +394,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     }, 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
+  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, peakWindowConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
 
   async function handleExport() {
     const blob = await api.exportDesktop(desktop.id);
@@ -681,6 +698,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             channelSelection={channelSelection}
             calculations={calculations}
             peakConfig={peakConfig}
+            peakWindowConfig={parsedPeakWindowConfig}
             smooth={smooth}
             disabled={!preview}
             onDone={() => {

@@ -15,6 +15,10 @@ function AppShell() {
   // escritorios, en vez de en el centro.
   const [calculations, setCalculations] = useState(["media", "maximo", "picos"]);
   const [peakConfig, setPeakConfig] = useState({ n_peaks: null, min_peak_distance_ms: null });
+  // Ventanas de activación relativas a cada pico: media y máximo en
+  // los N ms antes y/o después de cada pico, para varios márgenes a
+  // la vez (separados por comas, p.ej. "25, 50, 100").
+  const [peakWindowConfig, setPeakWindowConfig] = useState({ marginsText: "", before: true, after: true });
   // Suavizado tipo smoothdata() de MATLAB: es sí/no (sin niveles
   // intermedios), y afecta de verdad a los cálculos -no es solo un
   // efecto visual-, aplicado tras el RMS, igual que en el script de
@@ -65,6 +69,8 @@ function AppShell() {
         onChangeCalculations={setCalculations}
         peakConfig={peakConfig}
         onChangePeakConfig={setPeakConfig}
+        peakWindowConfig={peakWindowConfig}
+        onChangePeakWindowConfig={setPeakWindowConfig}
         onDetectPeaks={() => setDetectPeaksSignal((n) => n + 1)}
         onManualPlace={() => setManualPlaceSignal((n) => n + 1)}
         smooth={smooth}
@@ -77,6 +83,7 @@ function AppShell() {
           onDesktopUpdated={handleDesktopUpdated}
           calculations={calculations}
           peakConfig={peakConfig}
+          peakWindowConfig={peakWindowConfig}
           detectPeaksSignal={detectPeaksSignal}
           manualPlaceSignal={manualPlaceSignal}
           smooth={smooth}

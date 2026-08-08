@@ -16,6 +16,8 @@ export default function CalculationPanel({
   onChangeCalculations,
   peakConfig,
   onChangePeakConfig,
+  peakWindowConfig,
+  onChangePeakWindowConfig,
   onDetectPeaks,
   onManualPlace,
   smooth,
@@ -88,6 +90,16 @@ export default function CalculationPanel({
             Lapso
           </button>
         )}
+        {calculations.includes("picos") && (
+          <button
+            type="button"
+            className={`calc-chip ${calculations.includes("picos_ventana") ? "is-active" : ""}`}
+            onClick={() => toggle("picos_ventana")}
+            title="Media y máximo en una ventana de tiempo antes y/o después de cada pico"
+          >
+            Ventana por pico
+          </button>
+        )}
       </div>
 
       {calculations.includes("picos") && (
@@ -140,6 +152,42 @@ export default function CalculationPanel({
             >
               ✏️ Colocar manualmente
             </button>
+          )}
+
+          {calculations.includes("picos_ventana") && peakWindowConfig && (
+            <div className="peak-window-config">
+              <label className="peak-window-margins">
+                Márgenes (ms), separados por comas
+                <input
+                  type="text"
+                  value={peakWindowConfig.marginsText}
+                  onChange={(e) => onChangePeakWindowConfig({ ...peakWindowConfig, marginsText: e.target.value })}
+                  placeholder="25, 50, 100"
+                />
+              </label>
+              <div className="peak-window-sides">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={peakWindowConfig.before}
+                    onChange={(e) => onChangePeakWindowConfig({ ...peakWindowConfig, before: e.target.checked })}
+                  />
+                  Antes del pico
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={peakWindowConfig.after}
+                    onChange={(e) => onChangePeakWindowConfig({ ...peakWindowConfig, after: e.target.checked })}
+                  />
+                  Después del pico
+                </label>
+              </div>
+              <p className="calc-hint">
+                Para cada pico y cada margen, se calcula la media y el máximo de activación en esa ventana -p.ej. con
+                "25, 50" y ambos lados marcados, obtienes 8 valores por pico (4 antes, 4 después).
+              </p>
+            </div>
           )}
         </>
       )}
