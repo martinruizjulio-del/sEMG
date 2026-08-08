@@ -40,7 +40,8 @@ function ResultsTable({ channels, columnOrder, onReorder, hiddenColumns, onHide 
               title="Arrastra para reordenar la columna"
             >
               <span className="results-th-content">
-                ⠿ {m.replace(/_/g, " ")}
+                <span className="results-th-drag-icon">⠿</span>
+                <span className="results-th-text">{m.replace(/_/g, " ")}</span>
                 <button
                   type="button"
                   className="results-th-remove"
