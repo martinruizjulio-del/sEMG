@@ -10,7 +10,6 @@ const GENERAL_CALCS = [
   { value: "normalizacion", label: "Normalización de activación (%)" },
   { value: "frecuencia", label: "Frecuencia dominante" },
   { value: "fatiga", label: "Fatiga" },
-  { value: "orden_activacion", label: "Orden de activación" },
   { value: "coactivacion", label: "Coactivación (Falconer-Winter)" },
 ];
 
@@ -62,7 +61,7 @@ export default function CalculationPanel({
           que <code>smoothdata()</code> en MATLAB, con ventana automática-.
         </p>
       )}
-      {(calculations.includes("area") || calculations.includes("integral") || calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("orden_activacion") || calculations.includes("coactivacion") || calculations.includes("frecuencia_paso")) && (
+      {(calculations.includes("area") || calculations.includes("integral") || calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("coactivacion") || calculations.includes("frecuencia_paso")) && (
         <p className="calc-hint">
           {(calculations.includes("area") || calculations.includes("integral")) && (
             <>Área e Integral: dos formas de medir lo mismo (superficie bajo la curva), sobre la señal ya
@@ -74,9 +73,6 @@ export default function CalculationPanel({
           )}
           {calculations.includes("normalizacion") && (
             <>Normalización: reparte el % entre todos los canales seleccionados para Media, Máximo o Mediana. </>
-          )}
-          {calculations.includes("orden_activacion") && (
-            <>Orden de activación: necesita que "Picos" también esté marcado -usa el primer pico de cada canal para ordenarlos-. </>
           )}
           {calculations.includes("coactivacion") && (
             <>Coactivación: elige los dos canales a comparar en el panel de Canales, a la derecha. </>
@@ -124,6 +120,16 @@ export default function CalculationPanel({
             title="Cuenta cuántos picos (pasos/zancadas) hay por segundo -no es frecuencia espectral en Hz-"
           >
             Frecuencia de paso
+          </button>
+        )}
+        {calculations.includes("picos") && (
+          <button
+            type="button"
+            className={`calc-chip ${calculations.includes("orden_activacion") ? "is-active" : ""}`}
+            onClick={() => toggle("orden_activacion")}
+            title="Ordena los canales según cuál activa antes (usa el primer pico de cada uno)"
+          >
+            Orden de activación
           </button>
         )}
       </div>
