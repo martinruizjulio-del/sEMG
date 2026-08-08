@@ -38,6 +38,7 @@ export default function WaveformView({
   totalDurationMs = 0,
   strokeWidth = 1.5,
   chartStyle = "line", // "line" | "area"
+  showGrid = true,
 }) {
   const plotWidth = 1000;
   const marginLeft = 56;
@@ -193,20 +194,22 @@ export default function WaveformView({
 
         <g transform={`translate(${marginLeft}, 0)`}>
           <line x1="0" y1={plotHeight / 2} x2={plotWidth} y2={plotHeight / 2} className="waveform-baseline" />
-          {yTicks.map((t) => {
-            const y = plotHeight - t.frac * (plotHeight - 20) - 10;
-            return <line key={`grid-y-${t.frac}`} x1="0" y1={y} x2={plotWidth} y2={y} className="waveform-gridline" />;
-          })}
-          {timeTicks.map((t) => (
-            <line
-              key={`grid-x-${t}`}
-              x1={t * plotWidth}
-              y1="0"
-              x2={t * plotWidth}
-              y2={plotHeight}
-              className="waveform-gridline"
-            />
-          ))}
+          {showGrid &&
+            yTicks.map((t) => {
+              const y = plotHeight - t.frac * (plotHeight - 20) - 10;
+              return <line key={`grid-y-${t.frac}`} x1="0" y1={y} x2={plotWidth} y2={y} className="waveform-gridline" />;
+            })}
+          {showGrid &&
+            timeTicks.map((t) => (
+              <line
+                key={`grid-x-${t}`}
+                x1={t * plotWidth}
+                y1="0"
+                x2={t * plotWidth}
+                y2={plotHeight}
+                className="waveform-gridline"
+              />
+            ))}
           {chartStyle === "area" &&
             paths.map((p, i) => (
               <path key={`area-${i}`} d={p.areaD} className={`waveform-area ${p.colorClass}`} />

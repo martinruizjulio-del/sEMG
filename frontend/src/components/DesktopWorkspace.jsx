@@ -22,6 +22,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   const [mode, setMode] = useState("raw");
   const [strokeWidth, setStrokeWidth] = useState(1.4);
   const [chartStyle, setChartStyle] = useState("line");
+  const [showGrid, setShowGrid] = useState(true);
   const [compareMode, setCompareMode] = useState(false);
 
   const [analyzing, setAnalyzing] = useState(false);
@@ -550,6 +551,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             totalDurationMs={zoomedToSegment ? (segmentEnd - segmentStart) * totalDurationMs : totalDurationMs}
             strokeWidth={strokeWidth}
             chartStyle={chartStyle}
+            showGrid={showGrid}
           />
 
           {channelSelection.length > 0 && (
@@ -601,6 +603,14 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
                 Área
               </button>
             </div>
+
+            <button
+              type="button"
+              className={`workspace-btn-ghost ${showGrid ? "is-active" : ""}`}
+              onClick={() => setShowGrid((v) => !v)}
+            >
+              ⊞ Cuadrícula
+            </button>
           </div>
 
           {preview && (

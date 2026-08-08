@@ -42,6 +42,12 @@
   font-size: 12px;
 }
 
+.workspace-btn-ghost.is-active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
 .workspace-btn-ghost:hover {
   color: var(--text-primary);
   border-color: var(--text-secondary);
