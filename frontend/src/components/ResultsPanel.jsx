@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import "./ResultsPanel.css";
 
+// "num_picos" se sigue calculando (y exportando a Excel), pero no se
+// quiere ver en la tabla/lista de resultados en pantalla -es ruido
+// visual, lo relevante es el valor de cada pico individual-.
+const HIDDEN_METRICS = ["num_picos"];
+
+function visibleEntries(metrics) {
+  return Object.entries(metrics).filter(([key]) => !HIDDEN_METRICS.includes(key));
+}
+
 function ResultsTable({ channels, columnOrder, onReorder }) {
   const [draggedMetric, setDraggedMetric] = useState(null);
 
@@ -67,7 +76,7 @@ export default function ResultsPanel({ channels, sessionLabel }) {
     if (!channels) return;
     const seen = [];
     for (const ch of channels) {
-      for (const metric of Object.keys(ch.metrics)) {
+      for (const [metric] of visibleEntries(ch.metrics)) {
         if (!seen.includes(metric)) seen.push(metric);
       }
     }
@@ -108,7 +117,7 @@ export default function ResultsPanel({ channels, sessionLabel }) {
               {ch.channel_label} {ch.side ? `(${ch.side})` : ""}
             </div>
             <dl className="result-metrics">
-              {Object.entries(ch.metrics).map(([metric, value]) => (
+              {visibleEntries(ch.metrics).map(([metric, value]) => (
                 <div className="result-metric" key={metric}>
                   <dt title={ch.variable_names[metric]}>{metric.replace(/_/g, " ")}</dt>
                   <dd className="mono">{typeof value === "number" ? value.toFixed(3) : value}</dd>

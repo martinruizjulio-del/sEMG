@@ -9,7 +9,8 @@ Resuelve automáticamente, sin índices fijos:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
@@ -20,6 +21,7 @@ import pandas as pd
 class TabularFile:
     column_names: List[str]
     data: np.ndarray  # [muestras x canales], solo columnas numéricas válidas
+    converted_from_mv: List[str] = field(default_factory=list)  # columnas que se pasaron de mV a µV
 
 
 def _detect_delimiter(sample_line: str) -> str:
@@ -61,6 +63,7 @@ def parse_tabular(raw_text: str, has_header: bool = True) -> TabularFile:
 
     # Normalizar cada columna a numérico (maneja coma o punto decimal)
     numeric_cols = {}
+    converted_from_mv = []
     for col in df.columns:
         col_name = str(col).strip()
         # Algunos equipos EMG (p.ej. exportaciones tipo "Biceps femoris
@@ -74,7 +77,18 @@ def parse_tabular(raw_text: str, has_header: bool = True) -> TabularFile:
         converted = _to_float_series(df[col])
         # Descartar columnas totalmente vacías / no numéricas / de un solo valor constante NaN
         if converted.notna().sum() > 0:
+            # Si el nombre de la columna indica milivoltios (mV), se
+            # convierte a microvoltios (µV) -la unidad que usa el resto
+            # de la app- multiplicando por 1000, igual que ya se hacía
+            # para archivos .emt.
+            if has_header and re.search(r"\bmv\b", col_name, re.IGNORECASE):
+                converted = converted * 1000.0
+                converted_from_mv.append(col_name)
             numeric_cols[col_name] = converted
 
     clean_df = pd.DataFrame(numeric_cols)
-    return TabularFile(column_names=list(clean_df.columns), data=clean_df.to_numpy())
+    return TabularFile(
+        column_names=list(clean_df.columns),
+        data=clean_df.to_numpy(),
+        converted_from_mv=converted_from_mv,
+    )

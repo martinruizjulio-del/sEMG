@@ -96,6 +96,18 @@ def design_filter(spec: FilterSpec):
     return None
 
 
+def apply_notch(signal_1d: np.ndarray, fs: float, freq: float = 50.0, quality: float = 30.0) -> np.ndarray:
+    """Filtro de muesca (notch) para eliminar el ruido de la red
+    eléctrica (50 Hz en España) antes de un análisis espectral
+    -frecuencia dominante, fatiga-. Se aplica en fase cero (filtfilt)
+    para no desplazar el contenido en frecuencia. NO se aplica al
+    pipeline de amplitud (RMS/media/máximo/picos), que se mantiene
+    igual que Filtro_emg.m para no alterar los valores ya validados
+    contra la referencia."""
+    b, a = signal.iirnotch(freq, quality, fs)
+    return signal.filtfilt(b, a, signal_1d)
+
+
 def apply_filter(data: np.ndarray, spec: FilterSpec) -> np.ndarray:
     """Aplica el filtro a lo largo del eje 0 (muestras), soporta matriz [muestras x canales].
 

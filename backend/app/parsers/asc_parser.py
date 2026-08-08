@@ -23,6 +23,7 @@ class AscFile:
     sides: List[str]
     units: List[str]
     data: np.ndarray  # [muestras x canales]
+    converted_from_mv: List[str] = field(default_factory=list)  # canales que se pasaron de mV a µV
 
 
 def _read_section(lines: List[str], section: str) -> List[str]:
@@ -69,4 +70,17 @@ def parse_asc(raw_text: str) -> AscFile:
             rows.append([float(v) for v in values])
 
     data = np.array(rows)
-    return AscFile(fs=fs, channel_names=channel_names, sides=sides, units=units, data=data)
+
+    # Convertir a µV cualquier canal cuya unidad declarada en [UNITS]
+    # sea mV -la app trabaja siempre en µV-.
+    converted_from_mv = []
+    for i, unit in enumerate(units):
+        if i < data.shape[1] and unit.strip().lower() == "mv":
+            data[:, i] = data[:, i] * 1000.0
+            name = channel_names[i] if i < len(channel_names) else f"canal_{i}"
+            converted_from_mv.append(name)
+
+    return AscFile(
+        fs=fs, channel_names=channel_names, sides=sides, units=units, data=data,
+        converted_from_mv=converted_from_mv,
+    )

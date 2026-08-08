@@ -611,6 +611,11 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
               {preview.format}
             </div>
           )}
+          {preview?.converted_from_mv?.length > 0 && (
+            <p className="upload-status mono">
+              ⚡ Convertidos de mV a µV automáticamente: {preview.converted_from_mv.join(", ")}
+            </p>
+          )}
 
           {/* La tabla de resultados va creciendo aquí, en el centro,
               según se van efectuando análisis. */}

@@ -77,6 +77,16 @@ export default function CalculationPanel({
         >
           Picos
         </button>
+        {calculations.includes("picos") && (
+          <button
+            type="button"
+            className={`calc-chip ${calculations.includes("lapso") ? "is-active" : ""}`}
+            onClick={() => toggle("lapso")}
+            title="Diferencia entre el pico más tardío y el más temprano de este archivo"
+          >
+            Lapso
+          </button>
+        )}
       </div>
 
       {calculations.includes("picos") && (

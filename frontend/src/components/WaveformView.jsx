@@ -81,6 +81,29 @@ export default function WaveformView({
     return { ...p, y };
   });
 
+  // Escala numérica del eje Y: se usa el rango del canal en foco
+  // (activeChannelPosition) si lo hay -para que el punto de los picos
+  // encaje exactamente con las marcas-, o si no, el rango combinado de
+  // todos los canales mostrados.
+  const yAxisRange = (() => {
+    if (activeChannelPosition !== null && paths[activeChannelPosition]?.smoothed?.length) {
+      return { min: paths[activeChannelPosition].min, max: paths[activeChannelPosition].max };
+    }
+    const withData = paths.filter((p) => p.smoothed?.length);
+    if (withData.length === 0) return null;
+    return {
+      min: Math.min(...withData.map((p) => p.min)),
+      max: Math.max(...withData.map((p) => p.max)),
+    };
+  })();
+
+  const yTicks = yAxisRange
+    ? [0, 0.25, 0.5, 0.75, 1].map((f) => ({
+        frac: f,
+        value: yAxisRange.min + f * (yAxisRange.max - yAxisRange.min),
+      }))
+    : [];
+
   function handleClick(e) {
     if (!onManualPeakClick || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
@@ -116,8 +139,21 @@ export default function WaveformView({
           Tiempo (ms)
         </text>
 
+        {yTicks.map((t) => {
+          const y = plotHeight - t.frac * (plotHeight - 20) - 10;
+          return (
+            <text key={`ytick-${t.frac}`} className="waveform-y-tick" x={marginLeft - 8} y={y + 3} textAnchor="end">
+              {t.value.toFixed(1)}
+            </text>
+          );
+        })}
+
         <g transform={`translate(${marginLeft}, 0)`}>
           <line x1="0" y1={plotHeight / 2} x2={plotWidth} y2={plotHeight / 2} className="waveform-baseline" />
+          {yTicks.map((t) => {
+            const y = plotHeight - t.frac * (plotHeight - 20) - 10;
+            return <line key={`grid-${t.frac}`} x1="0" y1={y} x2={plotWidth} y2={y} className="waveform-gridline" />;
+          })}
           {chartStyle === "area" &&
             paths.map((p, i) => (
               <path key={`area-${i}`} d={p.areaD} className={`waveform-area ${p.colorClass}`} />

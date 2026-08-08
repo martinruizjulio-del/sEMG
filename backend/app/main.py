@@ -113,14 +113,17 @@ async def parse_preview(file: UploadFile = File(...)):
     if name.endswith(".asc"):
         parsed = parse_asc(text)
         fs, channels, data = parsed.fs, parsed.channel_names, parsed.data
+        converted_from_mv = parsed.converted_from_mv
         fmt = "asc"
     elif name.endswith(".emt"):
         parsed = parse_emt(text)
         fs, channels, data = parsed.fs, parsed.channel_names, parsed.data_uv
+        converted_from_mv = parsed.converted_from_mv
         fmt = "emt"
     else:
         parsed = parse_tabular(text)
         fs, channels, data = 1000.0, parsed.column_names, parsed.data
+        converted_from_mv = parsed.converted_from_mv
         fmt = "tabular"
 
     if data.ndim == 1:
@@ -136,6 +139,11 @@ async def parse_preview(file: UploadFile = File(...)):
         "n_samples": data.shape[0],
         "n_channels": data.shape[1],
         "preview": preview,
+        # Canales cuyo valor se convirtió automáticamente de mV a µV
+        # (detectado por la cabecera del archivo, p.ej. ".emt" con
+        # "Measure unit: mV", ".asc" con sección [UNITS], o un nombre de
+        # columna que contenga "mV" en CSV/TXT).
+        "converted_from_mv": converted_from_mv,
     }
 
 

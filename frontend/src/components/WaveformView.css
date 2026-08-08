@@ -46,14 +46,29 @@
 .waveform-area.channel-color-7 { fill: var(--ch-8); }
 
 .waveform-axis-title {
-  fill: var(--text-tertiary);
-  font-size: 11px;
+  fill: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .waveform-tick {
-  fill: var(--text-tertiary);
-  font-size: 9px;
+  fill: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
   font-family: var(--font-mono);
+}
+
+.waveform-y-tick {
+  fill: var(--text-secondary);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.waveform-gridline {
+  stroke: var(--border);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 3;
+  opacity: 0.6;
 }
 
 .waveform-empty {

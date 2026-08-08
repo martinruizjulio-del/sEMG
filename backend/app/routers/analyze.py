@@ -14,7 +14,7 @@ from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse, ChannelAnalysis
 from app.parsers.asc_parser import parse_asc
 from app.parsers.emt_parser import parse_emt
 from app.parsers.csv_txt_parser import parse_tabular
-from app.processing.filters import FilterSpec, apply_filter, clean_nan
+from app.processing.filters import FilterSpec, apply_filter, clean_nan, apply_notch
 from app.processing.rms import rms_emg
 from app.processing.peaks import detect_peaks, manual_peaks, PeakParams
 from app.processing.frequency import dominant_frequency
@@ -43,7 +43,7 @@ def _decimate(values: np.ndarray, max_points: int = 1500) -> list:
 
 
 def _parse_file(filename: str, raw_bytes: bytes):
-    """Devuelve (fs, channel_names, data[muestras x canales]) según el formato."""
+    """Devuelve (fs, channel_names, data[muestras x canales], converted_from_mv)."""
     try:
         text = raw_bytes.decode("utf-8-sig")
     except UnicodeDecodeError:
@@ -52,14 +52,14 @@ def _parse_file(filename: str, raw_bytes: bytes):
     name = filename.lower()
     if name.endswith(".asc"):
         parsed = parse_asc(text)
-        return parsed.fs, parsed.channel_names, parsed.data
+        return parsed.fs, parsed.channel_names, parsed.data, parsed.converted_from_mv
     if name.endswith(".emt"):
         parsed = parse_emt(text)
-        return parsed.fs, parsed.channel_names, parsed.data_uv
+        return parsed.fs, parsed.channel_names, parsed.data_uv, parsed.converted_from_mv
     parsed = parse_tabular(text)
     # Sin frecuencia de muestreo conocida en CSV/TXT genérico: 1000Hz por defecto,
     # ajustable más adelante si el usuario la indica en el formulario.
-    return 1000.0, parsed.column_names, parsed.data
+    return 1000.0, parsed.column_names, parsed.data, parsed.converted_from_mv
 
 
 def _processed_signal(channel_data: np.ndarray, sensor_type: str, fs: float, rms_num_points: int, smooth: bool = False):
@@ -108,7 +108,7 @@ async def analyze_file(
         raise HTTPException(400, f"Configuración de análisis inválida: {exc}")
 
     raw_bytes = await file.read()
-    fs, detected_names, data = _parse_file(file.filename, raw_bytes)
+    fs, detected_names, data, _converted_from_mv = _parse_file(file.filename, raw_bytes)
     # El archivo original NUNCA se guarda en disco: solo vive en memoria
     # durante esta petición y se descarta al terminar (según lo pedido).
 
@@ -204,13 +204,16 @@ async def analyze_file(
                 # Lapso: diferencia entre el pico más tardío y el más
                 # temprano DENTRO de este archivo (no compara con otros
                 # archivos -eso se decide luego, al elegir qué sesión
-                # incluir en la matriz de datos final-).
-                if peak_times:
+                # incluir en la matriz de datos final-). Es una opción
+                # aparte de "Picos": solo se guarda si se pide.
+                if "lapso" in request.calculations and peak_times:
                     metrics["lapso_ms"] = max(peak_times) - min(peak_times)
             elif calc == "frecuencia":
-                metrics["frecuencia_dominante_hz"] = dominant_frequency(processed_filtered, fs=fs)
+                notched = apply_notch(processed_filtered, fs=fs)
+                metrics["frecuencia_dominante_hz"] = dominant_frequency(notched, fs=fs)
             elif calc == "fatiga":
-                fat = calculate_fatigue(processed_filtered, fs=fs)
+                notched = apply_notch(processed_filtered, fs=fs)
+                fat = calculate_fatigue(notched, fs=fs)
                 metrics["fatiga_pendiente_hz_s"] = fat.slope_hz_per_s
                 metrics["fatiga_indice_pct"] = fat.fatigue_index_pct
             # "ratio_bilateral" y "normalizacion" se calculan aparte, más
@@ -371,7 +374,7 @@ async def channel_preview(
         raise HTTPException(400, f"Parámetro 'channels' inválido: {exc}")
 
     raw_bytes = await file.read()
-    fs, detected_names, data = _parse_file(file.filename, raw_bytes)
+    fs, detected_names, data, _converted_from_mv = _parse_file(file.filename, raw_bytes)
     if data.ndim == 1:
         data = data.reshape(-1, 1)
 
