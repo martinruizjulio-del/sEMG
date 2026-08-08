@@ -184,8 +184,8 @@ async def analyze_file(
                 # np.trapz se renombró a np.trapezoid en numpy 2.0;
                 # se soportan ambas versiones.
                 trapz_fn = getattr(np, "trapezoid", None) or np.trapz
-                dt = 1.0 / fs
-                metrics["integral"] = float(trapz_fn(np.abs(processed), dx=dt))
+                sample_interval_s = 1.0 / fs
+                metrics["integral"] = float(trapz_fn(np.abs(processed), dx=sample_interval_s))
             elif calc == "picos":
                 if ch.manual_peaks_ms:
                     # Posicionamiento manual directo (estilo Slider.m):

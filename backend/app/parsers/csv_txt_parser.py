@@ -43,9 +43,32 @@ def _to_float_series(series: pd.Series) -> pd.Series:
     return pd.to_numeric(swapped, errors="coerce")
 
 
-def parse_tabular(raw_text: str, has_header: bool = True) -> TabularFile:
+def _looks_like_header(first_line: str, delimiter: str) -> bool:
+    """Decide si la primera línea es una cabecera de texto o ya es la
+    primera fila de datos -algunos equipos EMG exportan .txt/.csv sin
+    ninguna cabecera-. Si la mayoría de los campos de esa línea se
+    pueden interpretar como número, es una fila de datos, no texto."""
+    fields = first_line.split(delimiter)
+    if not fields:
+        return True
+    numeric_count = 0
+    for field_ in fields:
+        candidate = field_.strip().replace(",", ".")
+        if candidate == "":
+            continue
+        try:
+            float(candidate)
+            numeric_count += 1
+        except ValueError:
+            pass
+    return numeric_count < len(fields) * 0.5
+
+
+def parse_tabular(raw_text: str, has_header: bool | None = None) -> TabularFile:
     first_line = raw_text.splitlines()[0]
     delimiter = _detect_delimiter(first_line)
+    if has_header is None:
+        has_header = _looks_like_header(first_line, delimiter)
 
     df = pd.read_csv(
         pd.io.common.StringIO(raw_text),
@@ -60,6 +83,11 @@ def parse_tabular(raw_text: str, has_header: bool = True) -> TabularFile:
         # sin ningún aviso-. index_col=False evita ese desplazamiento.
         index_col=False,
     )
+    if not has_header:
+        # Sin cabecera real, se numeran los canales de forma genérica
+        # en vez de usar "0", "1", "2"... (los índices que pone pandas
+        # por defecto, que se confunden con valores de datos).
+        df.columns = [f"canal_{i}" for i in range(len(df.columns))]
 
     # Normalizar cada columna a numérico (maneja coma o punto decimal)
     numeric_cols = {}

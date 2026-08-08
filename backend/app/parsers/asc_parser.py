@@ -55,6 +55,15 @@ def parse_asc(raw_text: str) -> AscFile:
     sides = _read_section(lines, "SIDE INFO")
     units = _read_section(lines, "UNITS")
 
+    # Algunos equipos (MegaWin) exportan "No name" cuando el canal no
+    # se nombró durante la grabación. Si se dejaran así, la app
+    # mostraría varios canales con el mismo nombre y no se podrían
+    # distinguir -se numeran como reserva ("Canal 1", "Canal 2"...)-.
+    channel_names = [
+        (name if name.strip().lower() != "no name" else f"Canal {i + 1}")
+        for i, name in enumerate(channel_names)
+    ]
+
     # Bloque [DATA]: cada línea es una fila, valores separados por tab
     try:
         data_start = next(i for i, l in enumerate(lines) if l.strip() == "[DATA]")
