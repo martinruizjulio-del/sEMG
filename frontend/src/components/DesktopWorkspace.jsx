@@ -11,9 +11,29 @@ import SequentialMode from "./SequentialMode";
 import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, peakWindowConfig, timeBinsConfig, detectPeaksSignal, manualPlaceSignal, smooth, coactivationConfig, onChangeCoactivationConfig }) {
+export default function DesktopWorkspace({
+  desktop,
+  onDesktopUpdated,
+  calculations,
+  onChangeCalculations,
+  peakConfig,
+  onChangePeakConfig,
+  peakWindowConfig,
+  timeBinsConfig,
+  detectPeaksSignal,
+  manualPlaceSignal,
+  smooth,
+  onChangeSmooth,
+  coactivationConfig,
+  onChangeCoactivationConfig,
+}) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiConfiguring, setAiConfiguring] = useState(false);
+  const [aiNote, setAiNote] = useState("");
+  const [aiInterpreting, setAiInterpreting] = useState(false);
+  const [aiSummary, setAiSummary] = useState("");
 
   // Convierte el texto "25, 50, 100" en la lista numérica que espera
   // el backend, ignorando entradas vacías o no numéricas.
@@ -227,6 +247,8 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
       setSegmentStart(0);
       setSegmentEnd(1);
       setZoomedToSegment(false);
+      setAiSummary("");
+      setAiNote("");
     } catch (err) {
       setError(
         err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")
@@ -277,6 +299,84 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, JSON.stringify(channelSelection.map((c) => [c.index, c.sensor_type])), smooth]);
+
+  // Mismo criterio que ChannelPanel.jsx: lee el lado/tipo tal cual lo
+  // dice el nombre del canal, sin invertir nada (no es fiable entre
+  // archivos distintos).
+  function detectSideFromLabel(label) {
+    const l = label.toLowerCase();
+    if (/\bright\b|\bderecho\b|\(r\)/.test(l)) return "R";
+    if (/\bleft\b|\bizquierdo\b|\(l\)/.test(l)) return "L";
+    return null;
+  }
+  function detectSensorTypeFromLabel(label) {
+    const l = label.toLowerCase();
+    if (/newton|\bfuerza\b|\bforce\b/.test(l)) return "force_platform";
+    return "emg";
+  }
+
+  async function handleAiConfigure() {
+    if (!aiPrompt.trim() || !preview?.channels?.length) return;
+    setAiConfiguring(true);
+    setAiNote("");
+    setError("");
+    try {
+      const result = await api.aiConfigure(aiPrompt.trim(), preview.channels);
+
+      if (result.channel_labels?.length) {
+        const newSelection = result.channel_labels.map((label) => {
+          const index = preview.channels.indexOf(label);
+          return {
+            index,
+            label,
+            side: detectSideFromLabel(label),
+            sensor_type: detectSensorTypeFromLabel(label),
+          };
+        });
+        setChannelSelection(newSelection);
+      }
+      if (result.calculations?.length && onChangeCalculations) {
+        onChangeCalculations(result.calculations);
+      }
+      if (result.peak_config && onChangePeakConfig) {
+        onChangePeakConfig({
+          n_peaks: result.peak_config.n_peaks ?? null,
+          min_peak_distance_ms: result.peak_config.min_peak_distance_ms ?? null,
+        });
+      }
+      if (onChangeSmooth) onChangeSmooth(Boolean(result.smooth));
+      if (result.segment_center_ms && totalDurationMs > 0) {
+        const centerMs = totalDurationMs / 2;
+        setSegmentStart(Math.max(0, (centerMs - result.segment_center_ms) / totalDurationMs));
+        setSegmentEnd(Math.min(1, (centerMs + result.segment_center_ms) / totalDurationMs));
+      }
+      setAiNote(result.notes || "Configuración aplicada.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAiConfiguring(false);
+    }
+  }
+
+  async function handleAiInterpret() {
+    if (!analyzeResult?.channels?.length) return;
+    setAiInterpreting(true);
+    setAiSummary("");
+    setError("");
+    try {
+      const payload = analyzeResult.channels.map((ch) => ({
+        channel_label: ch.channel_label,
+        side: ch.side,
+        metrics: ch.metrics,
+      }));
+      const result = await api.aiInterpret(payload);
+      setAiSummary(result.summary);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAiInterpreting(false);
+    }
+  }
 
   async function handleAddSubject(group) {
     const subject = await api.addSubject(desktop.id, group);
@@ -653,6 +753,30 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
               Leyendo archivo… si el servidor llevaba un rato sin usarse, puede tardar hasta 50s.
             </p>
           )}
+
+          {preview && (
+            <div className="ai-configure-box">
+              <label className="ai-configure-label">
+                🤖 Configurar con IA (describe en texto lo que quieres analizar)
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder='Ej: "analiza el bíceps derecho e izquierdo con media, máximo y picos cada 100ms, con suavizado"'
+                  rows={2}
+                />
+              </label>
+              <button
+                type="button"
+                className="workspace-btn-ghost"
+                onClick={handleAiConfigure}
+                disabled={!aiPrompt.trim() || aiConfiguring}
+              >
+                {aiConfiguring ? "Configurando…" : "Aplicar configuración"}
+              </button>
+              {aiNote && <p className="ai-note">{aiNote}</p>}
+            </div>
+          )}
+
           {error && <p className="workspace-error">{error}</p>}
           {detectingPeaks && (
             <p className="upload-status mono">
@@ -801,6 +925,20 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
               según se van efectuando análisis. */}
           {previewingLive && <p className="preview-loading mono">recalculando…</p>}
           <ResultsPanel channels={analyzeResult?.channels} sessionLabel={analyzeResult?.session_label} />
+
+          {analyzeResult?.channels?.length > 0 && (
+            <div className="ai-interpret-box">
+              <button
+                type="button"
+                className="workspace-btn-ghost"
+                onClick={handleAiInterpret}
+                disabled={aiInterpreting}
+              >
+                {aiInterpreting ? "Interpretando…" : "🤖 Interpretar resultados con IA"}
+              </button>
+              {aiSummary && <p className="ai-summary">{aiSummary}</p>}
+            </div>
+          )}
 
           <button
             className="workspace-btn-primary analyze-btn"
