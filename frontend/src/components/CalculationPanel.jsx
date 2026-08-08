@@ -4,11 +4,14 @@ const GENERAL_CALCS = [
   { value: "media", label: "Media" },
   { value: "maximo", label: "Máximo" },
   { value: "mediana", label: "Mediana" },
+  { value: "area", label: "Área" },
+  { value: "integral", label: "Integral" },
   { value: "ratio_bilateral", label: "Ratio bilateral (índice simetría)" },
   { value: "normalizacion", label: "Normalización de activación (%)" },
   { value: "frecuencia", label: "Frecuencia dominante" },
   { value: "fatiga", label: "Fatiga" },
   { value: "orden_activacion", label: "Orden de activación" },
+  { value: "coactivacion", label: "Coactivación (Falconer-Winter)" },
 ];
 
 export default function CalculationPanel({
@@ -59,8 +62,13 @@ export default function CalculationPanel({
           que <code>smoothdata()</code> en MATLAB, con ventana automática-.
         </p>
       )}
-      {(calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("orden_activacion")) && (
+      {(calculations.includes("area") || calculations.includes("integral") || calculations.includes("ratio_bilateral") || calculations.includes("normalizacion") || calculations.includes("orden_activacion") || calculations.includes("coactivacion")) && (
         <p className="calc-hint">
+          {(calculations.includes("area") || calculations.includes("integral")) && (
+            <>Área e Integral: dos formas de medir lo mismo (superficie bajo la curva), sobre la señal ya
+            rectificada. Área usa una suma simple (rectangular); Integral usa el método trapezoidal, algo más
+            preciso -por eso dan valores muy parecidos pero no idénticos-. </>
+          )}
           {calculations.includes("ratio_bilateral") && (
             <>Ratio bilateral: índice de simetría (siempre entre 0 y 1, 1 = simetría perfecta). Necesita al menos un canal marcado como "Derecho (R)" y otro como "Izquierdo (L)" del mismo músculo, y que Media, Máximo o Mediana también estén marcados. </>
           )}
@@ -68,7 +76,10 @@ export default function CalculationPanel({
             <>Normalización: reparte el % entre todos los canales seleccionados para Media, Máximo o Mediana. </>
           )}
           {calculations.includes("orden_activacion") && (
-            <>Orden de activación: necesita que "Picos" también esté marcado -usa el primer pico de cada canal para ordenarlos-.</>
+            <>Orden de activación: necesita que "Picos" también esté marcado -usa el primer pico de cada canal para ordenarlos-. </>
+          )}
+          {calculations.includes("coactivacion") && (
+            <>Coactivación: elige los dos canales a comparar en el panel de Canales, a la derecha.</>
           )}
         </p>
       )}

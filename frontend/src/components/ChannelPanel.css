@@ -35,6 +35,35 @@
   margin: 10px 0 4px;
 }
 
+.coactivation-config {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.coactivation-selects {
+  display: flex;
+  gap: 8px;
+}
+
+.coactivation-selects label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.coactivation-selects select {
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
 .channel-order-controls {
   display: flex;
   flex-direction: column;

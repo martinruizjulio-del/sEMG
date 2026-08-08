@@ -36,15 +36,24 @@ class TimeBinsConfig(BaseModel):
     duration_ms: Optional[float] = None  # duración de cada tramo (modo "duration")
 
 
+class CoactivationConfig(BaseModel):
+    """Índice de coactivación (Falconer & Winter, 1985) entre dos
+    canales -p.ej. agonista/antagonista-: CI = 2 * área común / área
+    total, en %."""
+    channel_a_index: Optional[int] = None
+    channel_b_index: Optional[int] = None
+
+
 class AnalyzeRequest(BaseModel):
     channels: list[ChannelSelection]  # qué canales analizar y cómo tratarlos
     calculations: list[Literal[
-        "media", "maximo", "mediana", "picos", "lapso", "picos_ventana", "tramos", "frecuencia", "fatiga",
-        "ratio_bilateral", "normalizacion", "orden_activacion",
+        "media", "maximo", "mediana", "area", "integral", "picos", "lapso", "picos_ventana", "tramos", "frecuencia", "fatiga",
+        "ratio_bilateral", "normalizacion", "orden_activacion", "coactivacion",
     ]]
     peak_config: Optional[PeakConfig] = None
     peak_window_config: Optional[PeakWindowConfig] = None
     time_bins_config: Optional[TimeBinsConfig] = None
+    coactivation_config: Optional[CoactivationConfig] = None
     rms_num_points: int = 51
     # Suavizado tipo smoothdata() de MATLAB (ventana automática),
     # aplicado tras el RMS y antes de calcular media/máximo/picos/etc.

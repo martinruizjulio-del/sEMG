@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "../lib/api";
 import ChannelPanel from "./ChannelPanel";
 import ModeSwitch from "./ModeSwitch";
@@ -11,7 +11,7 @@ import SequentialMode from "./SequentialMode";
 import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, peakWindowConfig, timeBinsConfig, detectPeaksSignal, manualPlaceSignal, smooth }) {
+export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, peakWindowConfig, timeBinsConfig, detectPeaksSignal, manualPlaceSignal, smooth, coactivationConfig, onChangeCoactivationConfig }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
 
@@ -40,6 +40,11 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
       }
     : null;
 
+  const parsedCoactivationConfig =
+    coactivationConfig && coactivationConfig.channelA !== null && coactivationConfig.channelB !== null
+      ? { channel_a_index: coactivationConfig.channelA, channel_b_index: coactivationConfig.channelB }
+      : null;
+
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null); // { fs, channels, preview: [...] }
   const [parsingFile, setParsingFile] = useState(false);
@@ -49,6 +54,89 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   const [chartStyle, setChartStyle] = useState("line");
   const [showGrid, setShowGrid] = useState(true);
   const [graphExpanded, setGraphExpanded] = useState(false);
+  const graphModalRef = useRef(null);
+
+  // Exporta el gráfico ampliado como PNG. Se incrustan los colores en
+  // hexadecimal (sin depender de las variables CSS de la página), para
+  // que la imagen resultante sea autocontenida y se vea igual siempre.
+  function handleDownloadGraphImage() {
+    const svgEl = graphModalRef.current?.querySelector("svg");
+    if (!svgEl) return;
+
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    styleEl.textContent = `
+      text { font-family: 'IBM Plex Mono', monospace; }
+      .waveform-baseline { stroke: #262e3a; stroke-width: 1; }
+      .waveform-gridline { stroke: #262e3a; stroke-width: 0.5; stroke-dasharray: 2 3; opacity: 0.6; }
+      .waveform-axis-title { fill: #8b96a8; font-size: 12px; font-weight: 600; }
+      .waveform-tick { fill: #e9edf3; font-size: 13px; font-weight: 600; }
+      .waveform-y-tick { fill: #8b96a8; font-size: 10px; }
+      .waveform-dim { fill: #0a0d12; opacity: 0.7; }
+      .waveform-trace { fill: none; opacity: 0.95; }
+      .waveform-area { stroke: none; opacity: 0.22; }
+      .waveform-peak-dot { fill: currentColor; stroke: #0a0d12; stroke-width: 1.5; }
+      .waveform-peak-label { fill: currentColor; font-size: 10px; paint-order: stroke; stroke: #0a0d12; stroke-width: 3px; }
+      .waveform-manual-peak { stroke: #e0a03d; stroke-width: 2; stroke-dasharray: 3 2; }
+      .waveform-peak-hitarea { fill: transparent; }
+      .waveform-trace.channel-color-0, .waveform-peak-dot.channel-color-0, g.channel-color-0 { color: #4dc9b0; }
+      .waveform-trace.channel-color-1, .waveform-peak-dot.channel-color-1, g.channel-color-1 { color: #e8735c; }
+      .waveform-trace.channel-color-2, .waveform-peak-dot.channel-color-2, g.channel-color-2 { color: #d9b64d; }
+      .waveform-trace.channel-color-3, .waveform-peak-dot.channel-color-3, g.channel-color-3 { color: #9c8ce8; }
+      .waveform-trace.channel-color-4, .waveform-peak-dot.channel-color-4, g.channel-color-4 { color: #5fa8d9; }
+      .waveform-trace.channel-color-5, .waveform-peak-dot.channel-color-5, g.channel-color-5 { color: #8fbf6b; }
+      .waveform-trace.channel-color-6, .waveform-peak-dot.channel-color-6, g.channel-color-6 { color: #d97fb0; }
+      .waveform-trace.channel-color-7, .waveform-peak-dot.channel-color-7, g.channel-color-7 { color: #7d8ba1; }
+      .waveform-trace.channel-color-0 { stroke: #4dc9b0; } .waveform-trace.channel-color-1 { stroke: #e8735c; }
+      .waveform-trace.channel-color-2 { stroke: #d9b64d; } .waveform-trace.channel-color-3 { stroke: #9c8ce8; }
+      .waveform-trace.channel-color-4 { stroke: #5fa8d9; } .waveform-trace.channel-color-5 { stroke: #8fbf6b; }
+      .waveform-trace.channel-color-6 { stroke: #d97fb0; } .waveform-trace.channel-color-7 { stroke: #7d8ba1; }
+      .waveform-area.channel-color-0 { fill: #4dc9b0; } .waveform-area.channel-color-1 { fill: #e8735c; }
+      .waveform-area.channel-color-2 { fill: #d9b64d; } .waveform-area.channel-color-3 { fill: #9c8ce8; }
+      .waveform-area.channel-color-4 { fill: #5fa8d9; } .waveform-area.channel-color-5 { fill: #8fbf6b; }
+      .waveform-area.channel-color-6 { fill: #d97fb0; } .waveform-area.channel-color-7 { fill: #7d8ba1; }
+    `;
+    clone.insertBefore(styleEl, clone.firstChild);
+
+    const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    bgRect.setAttribute("x", "0");
+    bgRect.setAttribute("y", "0");
+    bgRect.setAttribute("width", "100%");
+    bgRect.setAttribute("height", "100%");
+    bgRect.setAttribute("fill", "#0a0d12");
+    clone.insertBefore(bgRect, clone.firstChild.nextSibling);
+
+    const viewBoxAttr = svgEl.getAttribute("viewBox");
+    const [, , vbWidth, vbHeight] = (viewBoxAttr || "0 0 1056 306").split(" ").map(Number);
+
+    const svgData = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = () => {
+      const scale = 2; // exportar al doble de resolución, para que se vea nítido
+      const canvas = document.createElement("canvas");
+      canvas.width = vbWidth * scale;
+      canvas.height = vbHeight * scale;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#0a0d12";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `grafico_${desktop.name.replace(/\s+/g, "_")}_${Date.now()}.png`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }, "image/png");
+    };
+    img.src = url;
+  }
+
   const [compareMode, setCompareMode] = useState(false);
 
   const [analyzing, setAnalyzing] = useState(false);
@@ -356,6 +444,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         peak_config: peakConfig,
         peak_window_config: parsedPeakWindowConfig,
         time_bins_config: parsedTimeBinsConfig,
+        coactivation_config: parsedCoactivationConfig,
         smooth,
         save_results: true,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -392,6 +481,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           peak_config: peakConfig,
           peak_window_config: parsedPeakWindowConfig,
           time_bins_config: parsedTimeBinsConfig,
+          coactivation_config: parsedCoactivationConfig,
           smooth,
           save_results: false,
           segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -409,7 +499,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     }, 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, peakWindowConfig, timeBinsConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
+  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, peakWindowConfig, timeBinsConfig, coactivationConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
 
   async function handleExport() {
     const blob = await api.exportDesktop(desktop.id);
@@ -749,6 +839,9 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
                 manualPeakActiveIndex={manualPeakActiveIndex}
                 onSetManualPeakActive={handleSetManualPeakActive}
                 onClearManualPeaks={handleClearManualPeaks}
+                calculationsIncludeCoactivation={calculations.includes("coactivacion")}
+                coactivationConfig={coactivationConfig}
+                onChangeCoactivationConfig={onChangeCoactivationConfig}
               />
             </aside>
           </>
@@ -769,12 +862,17 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
 
       {graphExpanded && (
         <div className="graph-expand-overlay" onClick={() => setGraphExpanded(false)}>
-          <div className="graph-expand-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="graph-expand-modal" onClick={(e) => e.stopPropagation()} ref={graphModalRef}>
             <div className="graph-expand-header">
               <h3>Gráfico ampliado</h3>
-              <button type="button" className="workspace-btn-ghost" onClick={() => setGraphExpanded(false)}>
-                Cerrar ✕
-              </button>
+              <div className="graph-expand-header-actions">
+                <button type="button" className="workspace-btn-ghost" onClick={handleDownloadGraphImage}>
+                  ⬇ Descargar imagen
+                </button>
+                <button type="button" className="workspace-btn-ghost" onClick={() => setGraphExpanded(false)}>
+                  Cerrar ✕
+                </button>
+              </div>
             </div>
             <WaveformView {...waveformProps} height={520} />
           </div>

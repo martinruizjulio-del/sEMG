@@ -173,6 +173,19 @@ async def analyze_file(
                 metrics["maximo"] = float(np.max(np.abs(processed)))
             elif calc == "mediana":
                 metrics["mediana"] = float(np.median(processed))
+            elif calc == "area":
+                # Suma rectangular (Riemann) de la señal rectificada,
+                # escalada por el intervalo de muestreo -método simple,
+                # cada muestra "pesa" 1/fs segundos-.
+                metrics["area"] = float(np.sum(np.abs(processed)) / fs)
+            elif calc == "integral":
+                # Integral trapezoidal (más precisa que la suma
+                # rectangular) de la misma señal rectificada.
+                # np.trapz se renombró a np.trapezoid en numpy 2.0;
+                # se soportan ambas versiones.
+                trapz_fn = getattr(np, "trapezoid", None) or np.trapz
+                dt = 1.0 / fs
+                metrics["integral"] = float(trapz_fn(np.abs(processed), dx=dt))
             elif calc == "picos":
                 if ch.manual_peaks_ms:
                     # Posicionamiento manual directo (estilo Slider.m):
@@ -264,6 +277,9 @@ async def analyze_file(
         channel_records.append({
             "index": ch.index, "label": label, "side": ch.side, "metrics": metrics,
             "peak_times_ms": peak_times,
+            # Solo se guarda si hace falta para coactivación -evita usar
+            # memoria de más en análisis grandes que no la necesiten-.
+            "processed": processed if "coactivacion" in request.calculations else None,
         })
         channels_out.append(ChannelAnalysisOut(
             channel_label=label,
@@ -285,6 +301,9 @@ async def analyze_file(
 
     if "orden_activacion" in request.calculations:
         _add_activation_order(channel_records)
+
+    if "coactivacion" in request.calculations and request.coactivation_config:
+        _add_coactivation_index(channel_records, request.coactivation_config)
 
     # --- Generar nombres de variable definitivos y guardar en BD ---
 
@@ -389,6 +408,40 @@ def _add_activation_order(channel_records: list[dict]) -> None:
     candidates.sort(key=lambda item: item[1])
     for rank, (rec, _first_peak_ms) in enumerate(candidates, start=1):
         rec["metrics"]["orden_activacion"] = float(rank)
+
+
+def _add_coactivation_index(channel_records: list[dict], cfg) -> None:
+    """Índice de coactivación de Falconer & Winter (1985) entre dos
+    canales elegidos -típicamente agonista/antagonista-:
+
+        CI = 2 * (área común) / (área total) * 100
+
+    El "área común" es, en cada instante, el menor de los dos valores
+    de activación (la parte que ambos músculos comparten); el "área
+    total" es la suma de la actividad de ambos canales por separado.
+    Se guarda una sola vez, en el canal A, con un nombre que deja
+    claro contra qué canal se comparó.
+    """
+    rec_a = next((r for r in channel_records if r["index"] == cfg.channel_a_index), None)
+    rec_b = next((r for r in channel_records if r["index"] == cfg.channel_b_index), None)
+    if not rec_a or not rec_b or rec_a["processed"] is None or rec_b["processed"] is None:
+        return
+
+    a = np.abs(rec_a["processed"])
+    b = np.abs(rec_b["processed"])
+    n = min(len(a), len(b))
+    if n == 0:
+        return
+    a, b = a[:n], b[:n]
+
+    common_area = float(np.sum(np.minimum(a, b)))
+    total_area = float(np.sum(a) + np.sum(b))
+    if total_area == 0:
+        return
+    ci = (2 * common_area / total_area) * 100.0
+
+    partner_label = base_muscle_name(rec_b["label"])
+    rec_a["metrics"][f"coactivacion_vs_{partner_label}_pct"] = ci
 
 
 @preview_router.post("/channel-preview")

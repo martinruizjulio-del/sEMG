@@ -28,6 +28,9 @@ function AppShell() {
     durationValue: "5",
     durationUnit: "min",
   });
+  // Coactivación (Falconer-Winter): compara dos canales elegidos en
+  // el panel de Canales.
+  const [coactivationConfig, setCoactivationConfig] = useState({ channelA: null, channelB: null });
   // Suavizado tipo smoothdata() de MATLAB: es sí/no (sin niveles
   // intermedios), y afecta de verdad a los cálculos -no es solo un
   // efecto visual-, aplicado tras el RMS, igual que en el script de
@@ -99,6 +102,8 @@ function AppShell() {
           detectPeaksSignal={detectPeaksSignal}
           manualPlaceSignal={manualPlaceSignal}
           smooth={smooth}
+          coactivationConfig={coactivationConfig}
+          onChangeCoactivationConfig={setCoactivationConfig}
         />
       ) : (
         <div className="app-empty-state">

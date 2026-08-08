@@ -30,6 +30,9 @@ export default function ChannelPanel({
   manualPeakActiveIndex = null,
   onSetManualPeakActive,
   onClearManualPeaks,
+  calculationsIncludeCoactivation = false,
+  coactivationConfig,
+  onChangeCoactivationConfig,
 }) {
   function updateChannel(index, patch) {
     onChange(selection.map((c) => (c.index === index ? { ...c, ...patch } : c)));
@@ -159,6 +162,54 @@ export default function ChannelPanel({
             ))}
           </ul>
         </>
+      )}
+      {calculationsIncludeCoactivation && selection.length >= 2 && coactivationConfig && (
+        <div className="coactivation-config">
+          <div className="channel-panel-section-label">Coactivación (Falconer-Winter)</div>
+          <div className="coactivation-selects">
+            <label>
+              Canal A
+              <select
+                value={coactivationConfig.channelA ?? ""}
+                onChange={(e) =>
+                  onChangeCoactivationConfig({
+                    ...coactivationConfig,
+                    channelA: e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+              >
+                <option value="">—</option>
+                {selection.map((s) => (
+                  <option key={s.index} value={s.index}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Canal B
+              <select
+                value={coactivationConfig.channelB ?? ""}
+                onChange={(e) =>
+                  onChangeCoactivationConfig({
+                    ...coactivationConfig,
+                    channelB: e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+              >
+                <option value="">—</option>
+                {selection.map((s) => (
+                  <option key={s.index} value={s.index}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="calc-hint">
+            CI = 2 × área común / área total, en %. 100% = coactivación total, 0% = sin ninguna superposición.
+          </p>
+        </div>
       )}
     </div>
   );

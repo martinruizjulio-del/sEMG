@@ -249,6 +249,11 @@
   font-size: 15px;
 }
 
+.graph-expand-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .stroke-width-control input {
   width: 120px;
 }
