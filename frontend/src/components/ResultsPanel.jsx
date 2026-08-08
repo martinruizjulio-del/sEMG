@@ -10,8 +10,9 @@ function visibleEntries(metrics) {
   return Object.entries(metrics).filter(([key]) => !HIDDEN_METRICS.includes(key));
 }
 
-function ResultsTable({ channels, columnOrder, onReorder }) {
+function ResultsTable({ channels, columnOrder, onReorder, hiddenColumns, onHide }) {
   const [draggedMetric, setDraggedMetric] = useState(null);
+  const visibleColumns = columnOrder.filter((m) => !hiddenColumns.includes(m));
 
   function handleDrop(targetMetric) {
     if (!draggedMetric || draggedMetric === targetMetric) return;
@@ -27,7 +28,7 @@ function ResultsTable({ channels, columnOrder, onReorder }) {
       <thead>
         <tr>
           <th>Músculo</th>
-          {columnOrder.map((m) => (
+          {visibleColumns.map((m) => (
             <th
               key={m}
               draggable
@@ -38,7 +39,20 @@ function ResultsTable({ channels, columnOrder, onReorder }) {
               onDragEnd={() => setDraggedMetric(null)}
               title="Arrastra para reordenar la columna"
             >
-              ⠿ {m.replace(/_/g, " ")}
+              <span className="results-th-content">
+                ⠿ {m.replace(/_/g, " ")}
+                <button
+                  type="button"
+                  className="results-th-remove"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onHide(m);
+                  }}
+                  title="Quitar esta columna de la tabla"
+                >
+                  ✕
+                </button>
+              </span>
             </th>
           ))}
         </tr>
@@ -50,7 +64,7 @@ function ResultsTable({ channels, columnOrder, onReorder }) {
               <span className={`channel-swatch channel-color-${i % 8}`} />
               {ch.channel_label} {ch.side ? `(${ch.side})` : ""}
             </td>
-            {columnOrder.map((m) => (
+            {visibleColumns.map((m) => (
               <td key={m} className="mono">
                 {typeof ch.metrics[m] === "number" ? ch.metrics[m].toFixed(3) : "—"}
               </td>
@@ -66,6 +80,11 @@ export default function ResultsPanel({ channels, sessionLabel }) {
   const [view, setView] = useState("tabla"); // "lista" | "tabla"
   const [expanded, setExpanded] = useState(false);
   const [columnOrder, setColumnOrder] = useState([]);
+  const [hiddenColumns, setHiddenColumns] = useState([]);
+
+  function hideColumn(metric) {
+    setHiddenColumns((prev) => (prev.includes(metric) ? prev : [...prev, metric]));
+  }
 
   // Todas las métricas presentes en cualquier canal, en el orden en que
   // aparecen por primera vez. Se guarda en columnOrder para poder
@@ -128,12 +147,25 @@ export default function ResultsPanel({ channels, sessionLabel }) {
         ))
       ) : (
         <>
-          <p className="results-reorder-hint">Arrastra las cabeceras (⠿) para reordenar las columnas.</p>
+          <p className="results-reorder-hint">
+            Arrastra las cabeceras (⠿) para reordenar las columnas, o pulsa ✕ para quitar una de la tabla.
+            {hiddenColumns.length > 0 && (
+              <button type="button" className="results-restore-btn" onClick={() => setHiddenColumns([])}>
+                Mostrar las {hiddenColumns.length} columnas ocultas
+              </button>
+            )}
+          </p>
           <button type="button" className="results-expand-btn" onClick={() => setExpanded(true)}>
             ⛶ Ampliar tabla (para copiar y pegar)
           </button>
           <div className="results-table-wrap">
-            <ResultsTable channels={channels} columnOrder={columnOrder} onReorder={setColumnOrder} />
+            <ResultsTable
+              channels={channels}
+              columnOrder={columnOrder}
+              onReorder={setColumnOrder}
+              hiddenColumns={hiddenColumns}
+              onHide={hideColumn}
+            />
           </div>
         </>
       )}
@@ -148,11 +180,17 @@ export default function ResultsPanel({ channels, sessionLabel }) {
               </button>
             </div>
             <p className="results-table-modal-hint">
-              Arrastra las cabeceras (⠿) para reordenar las columnas. Luego selecciona la tabla (Ctrl/Cmd+A dentro
-              de ella) y cópiala directamente en Excel.
+              Arrastra las cabeceras (⠿) para reordenar, ✕ para quitar una columna. Luego selecciona la tabla
+              (Ctrl/Cmd+A dentro de ella) y cópiala directamente en Excel.
             </p>
             <div className="results-table-modal-body">
-              <ResultsTable channels={channels} columnOrder={columnOrder} onReorder={setColumnOrder} />
+              <ResultsTable
+                channels={channels}
+                columnOrder={columnOrder}
+                onReorder={setColumnOrder}
+                hiddenColumns={hiddenColumns}
+                onHide={hideColumn}
+              />
             </div>
           </div>
         </div>
