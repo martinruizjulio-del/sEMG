@@ -25,6 +25,10 @@ function AppShell() {
   // DesktopWorkspace. Se comunican con una simple señal (un contador):
   // al pulsar el botón se incrementa, y DesktopWorkspace reacciona.
   const [detectPeaksSignal, setDetectPeaksSignal] = useState(0);
+  // Segunda señal, aparte: "Colocar manualmente" borra los picos del
+  // canal en foco y empieza de cero -distinto de "Detectar", que parte
+  // de los picos ya detectados automáticamente-.
+  const [manualPlaceSignal, setManualPlaceSignal] = useState(0);
 
   const loadDesktops = useCallback(async () => {
     const list = await api.listDesktops();
@@ -62,6 +66,7 @@ function AppShell() {
         peakConfig={peakConfig}
         onChangePeakConfig={setPeakConfig}
         onDetectPeaks={() => setDetectPeaksSignal((n) => n + 1)}
+        onManualPlace={() => setManualPlaceSignal((n) => n + 1)}
         smooth={smooth}
         onChangeSmooth={setSmooth}
       />
@@ -73,6 +78,7 @@ function AppShell() {
           calculations={calculations}
           peakConfig={peakConfig}
           detectPeaksSignal={detectPeaksSignal}
+          manualPlaceSignal={manualPlaceSignal}
           smooth={smooth}
         />
       ) : (

@@ -17,6 +17,7 @@ export default function CalculationPanel({
   peakConfig,
   onChangePeakConfig,
   onDetectPeaks,
+  onManualPlace,
   smooth,
   onChangeSmooth,
 }) {
@@ -125,9 +126,19 @@ export default function CalculationPanel({
               type="button"
               className="workspace-btn-ghost calc-detect-btn"
               onClick={onDetectPeaks}
-              title="Detecta los picos automáticamente y los muestra en el gráfico para poder ajustarlos a mano, sin guardar todavía"
+              title="Detecta los picos automáticamente y los deja marcados en el gráfico -arrastra un punto para ajustarlo sin borrarlo, clic simple para quitarlo-"
             >
-              🎯 Detectar y ajustar picos
+              🎯 Detectar picos
+            </button>
+          )}
+          {onManualPlace && (
+            <button
+              type="button"
+              className="workspace-btn-ghost calc-detect-btn"
+              onClick={onManualPlace}
+              title="Borra los picos del canal en foco y los deja colocar a mano desde cero, clicando en el gráfico"
+            >
+              ✏️ Colocar manualmente
             </button>
           )}
         </>

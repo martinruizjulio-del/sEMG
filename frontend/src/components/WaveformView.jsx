@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import "./WaveformView.css";
 
 /**
@@ -15,6 +15,11 @@ import "./WaveformView.css";
  * indica qué entrada de channelsData es la que corresponde a esos
  * picos, para poder situar el punto a la altura correcta.
  *
+ * Cada punto se puede ARRASTRAR para reubicarlo (onPeakDrag(index,
+ * fraction), se llama al soltar) sin necesidad de borrarlo y ponerlo
+ * de nuevo; un clic simple sobre el punto (sin arrastrar) lo quita
+ * (onPeakRemove(index)).
+ *
  * El suavizado (smoothdata) NO se hace aquí -es un efecto real sobre
  * el cálculo, se aplica en el servidor antes de decimar para
  * pantalla, así el gráfico coincide siempre con lo que se calcula-.
@@ -23,6 +28,8 @@ export default function WaveformView({
   channelsData,
   height = 260,
   onManualPeakClick,
+  onPeakDrag,
+  onPeakRemove,
   manualPeakFractions = [],
   peakMarkers = [],
   activeChannelPosition = null,
@@ -39,6 +46,7 @@ export default function WaveformView({
   const plotHeight = height;
   const totalHeight = height + marginBottom;
   const svgRef = useRef(null);
+  const [drag, setDrag] = useState(null); // { index, startX, moved, fraction }
 
   const paths = useMemo(() => {
     return channelsData.map(({ values, colorClass }) => {
@@ -69,16 +77,19 @@ export default function WaveformView({
 
   // Altura Y (en el gráfico) de cada pico, calculada sobre la MISMA
   // curva que se está dibujando -así el punto queda exactamente sobre
-  // la señal, no flotando aparte-.
+  // la señal, no flotando aparte-. Si se está arrastrando un pico, se
+  // usa su posición en vivo en vez de la guardada.
   const activeCurve = activeChannelPosition !== null ? paths[activeChannelPosition] : null;
-  const positionedPeaks = peakMarkers.map((p) => {
-    if (!activeCurve || !activeCurve.smoothed?.length) return { ...p, y: plotHeight / 2 };
-    const idx = Math.round(p.fraction * (activeCurve.smoothed.length - 1));
+  const positionedPeaks = peakMarkers.map((p, i) => {
+    const identityIndex = p.originalIndex ?? i;
+    const fraction = drag && drag.index === identityIndex ? drag.fraction : p.fraction;
+    if (!activeCurve || !activeCurve.smoothed?.length) return { ...p, fraction, y: plotHeight / 2, identityIndex };
+    const idx = Math.round(fraction * (activeCurve.smoothed.length - 1));
     const v = activeCurve.smoothed[Math.min(Math.max(idx, 0), activeCurve.smoothed.length - 1)];
     const span = activeCurve.max - activeCurve.min || 1;
     const norm = (v - activeCurve.min) / span;
     const y = plotHeight - norm * (plotHeight - 20) - 10;
-    return { ...p, y };
+    return { ...p, fraction, y, value: v, identityIndex };
   });
 
   // Escala numérica del eje Y: se usa el rango del canal en foco
@@ -104,15 +115,47 @@ export default function WaveformView({
       }))
     : [];
 
-  function handleClick(e) {
-    if (!onManualPeakClick || !svgRef.current) return;
+  function fractionFromClientX(clientX) {
+    if (!svgRef.current) return null;
     const rect = svgRef.current.getBoundingClientRect();
-    const xFractionOfSvg = (e.clientX - rect.left) / rect.width;
-    // El clic llega en fracción del SVG entero; convertimos a fracción
-    // del área de la gráfica (descontando el margen del eje Y).
+    const xFractionOfSvg = (clientX - rect.left) / rect.width;
     const marginFraction = marginLeft / width;
-    const fraction = (xFractionOfSvg - marginFraction) / (1 - marginFraction);
-    onManualPeakClick(Math.min(1, Math.max(0, fraction)));
+    return Math.min(1, Math.max(0, (xFractionOfSvg - marginFraction) / (1 - marginFraction)));
+  }
+
+  function handleClick(e) {
+    if (!onManualPeakClick) return;
+    const fraction = fractionFromClientX(e.clientX);
+    if (fraction !== null) onManualPeakClick(fraction);
+  }
+
+  function handlePeakPointerDown(e, index, startFraction) {
+    if (!onPeakDrag && !onPeakRemove) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const startClientX = e.clientX;
+    let current = { index, moved: false, fraction: startFraction };
+    setDrag(current);
+
+    function onMove(moveEvent) {
+      const fraction = fractionFromClientX(moveEvent.clientX);
+      if (fraction === null) return;
+      const moved = current.moved || Math.abs(moveEvent.clientX - startClientX) > 3;
+      current = { index, moved, fraction };
+      setDrag(current);
+    }
+    function onUp() {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      if (current.moved) {
+        onPeakDrag?.(current.index, current.fraction);
+      } else {
+        onPeakRemove?.(current.index);
+      }
+      setDrag(null);
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   }
 
   const timeTicks = totalDurationMs > 0 ? [0, 0.25, 0.5, 0.75, 1] : [];
@@ -152,8 +195,18 @@ export default function WaveformView({
           <line x1="0" y1={plotHeight / 2} x2={plotWidth} y2={plotHeight / 2} className="waveform-baseline" />
           {yTicks.map((t) => {
             const y = plotHeight - t.frac * (plotHeight - 20) - 10;
-            return <line key={`grid-${t.frac}`} x1="0" y1={y} x2={plotWidth} y2={y} className="waveform-gridline" />;
+            return <line key={`grid-y-${t.frac}`} x1="0" y1={y} x2={plotWidth} y2={y} className="waveform-gridline" />;
           })}
+          {timeTicks.map((t) => (
+            <line
+              key={`grid-x-${t}`}
+              x1={t * plotWidth}
+              y1="0"
+              x2={t * plotWidth}
+              y2={plotHeight}
+              className="waveform-gridline"
+            />
+          ))}
           {chartStyle === "area" &&
             paths.map((p, i) => (
               <path key={`area-${i}`} d={p.areaD} className={`waveform-area ${p.colorClass}`} />
@@ -187,9 +240,23 @@ export default function WaveformView({
             // un poco la distancia para que no se solapen si hay varios
             // picos muy juntos en el tiempo.
             const labelY = p.y - 10 - (i % 3) * 12;
+            const draggable = Boolean(onPeakDrag || onPeakRemove);
             return (
               <g key={`marker-${i}`} className={p.colorClass}>
-                <circle cx={x} cy={p.y} r="4.5" className="waveform-peak-dot" />
+                <circle
+                  cx={x}
+                  cy={p.y}
+                  r="9"
+                  className="waveform-peak-hitarea"
+                  onMouseDown={draggable ? (e) => handlePeakPointerDown(e, p.identityIndex, p.fraction) : undefined}
+                />
+                <circle
+                  cx={x}
+                  cy={p.y}
+                  r={drag && drag.index === p.identityIndex ? 6 : 4.5}
+                  className={`waveform-peak-dot ${draggable ? "is-draggable" : ""}`}
+                  onMouseDown={draggable ? (e) => handlePeakPointerDown(e, p.identityIndex, p.fraction) : undefined}
+                />
                 <text x={x + 7} y={labelY} className="waveform-peak-label">
                   {p.label} · {typeof p.value === "number" ? p.value.toFixed(2) : p.value}
                 </text>
@@ -208,7 +275,8 @@ export default function WaveformView({
       )}
       {onManualPeakClick && (
         <div className="waveform-manual-hint">
-          Clic para añadir un pico · clic cerca de uno ya puesto para quitarlo ({peakMarkers.length || manualPeakFractions.length} colocados)
+          Clic fuera de un punto para añadir un pico · arrastra un punto para moverlo · clic simple sobre un punto
+          para quitarlo ({peakMarkers.length || manualPeakFractions.length} colocados)
         </div>
       )}
     </div>

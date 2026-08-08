@@ -13,6 +13,7 @@ export default function DesktopList({
   peakConfig,
   onChangePeakConfig,
   onDetectPeaks,
+  onManualPlace,
   smooth,
   onChangeSmooth,
 }) {
@@ -83,6 +84,7 @@ export default function DesktopList({
             peakConfig={peakConfig}
             onChangePeakConfig={onChangePeakConfig}
             onDetectPeaks={onDetectPeaks}
+            onManualPlace={onManualPlace}
             smooth={smooth}
             onChangeSmooth={onChangeSmooth}
           />

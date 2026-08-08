@@ -95,6 +95,16 @@
   fill: currentColor;
   stroke: var(--bg);
   stroke-width: 1.5;
+  transition: r 0.1s;
+}
+
+.waveform-peak-dot.is-draggable {
+  cursor: grab;
+}
+
+.waveform-peak-hitarea {
+  fill: transparent;
+  cursor: grab;
 }
 
 .waveform-peak-label {

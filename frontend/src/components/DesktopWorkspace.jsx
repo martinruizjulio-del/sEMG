@@ -11,7 +11,7 @@ import SequentialMode from "./SequentialMode";
 import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, detectPeaksSignal, smooth }) {
+export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, detectPeaksSignal, manualPlaceSignal, smooth }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
 
@@ -181,19 +181,39 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
       : fraction * totalDurationMs;
     const current = manualPeaks[manualPeakActiveIndex] || [];
     pushPeakHistory(manualPeakActiveIndex, current);
+    setManualPeaks((prev) => ({
+      ...prev,
+      [manualPeakActiveIndex]: [...current, timeMs].sort((a, b) => a - b),
+    }));
+  }
+
+  // Arrastrar un punto ya colocado lo reubica sin borrarlo -evita
+  // tener que quitarlo y volver a añadirlo desde cero para corregir
+  // ligeramente su posición-.
+  function handlePeakDrag(peakIndex, fraction) {
+    if (manualPeakActiveIndex === null) return;
+    const timeMs = zoomedToSegment
+      ? (segmentStart + fraction * (segmentEnd - segmentStart)) * totalDurationMs
+      : fraction * totalDurationMs;
+    const current = manualPeaks[manualPeakActiveIndex] || [];
+    pushPeakHistory(manualPeakActiveIndex, current);
     setManualPeaks((prev) => {
-      // Si el clic cae cerca (±1% del total) de un pico ya colocado,
-      // se quita en vez de añadir uno nuevo -así se pueden corregir
-      // los picos detectados automáticamente sin tener que limpiarlos
-      // todos y empezar de cero-.
-      const thresholdMs = totalDurationMs * 0.01;
-      const closeIdx = current.findIndex((t) => Math.abs(t - timeMs) < thresholdMs);
-      if (closeIdx !== -1) {
-        const next = current.filter((_, i) => i !== closeIdx);
-        return { ...prev, [manualPeakActiveIndex]: next };
-      }
-      return { ...prev, [manualPeakActiveIndex]: [...current, timeMs].sort((a, b) => a - b) };
+      const next = [...current];
+      next[peakIndex] = timeMs;
+      next.sort((a, b) => a - b);
+      return { ...prev, [manualPeakActiveIndex]: next };
     });
+  }
+
+  // Un clic simple (sin arrastrar) sobre un punto ya colocado lo quita.
+  function handlePeakRemove(peakIndex) {
+    if (manualPeakActiveIndex === null) return;
+    const current = manualPeaks[manualPeakActiveIndex] || [];
+    pushPeakHistory(manualPeakActiveIndex, current);
+    setManualPeaks((prev) => ({
+      ...prev,
+      [manualPeakActiveIndex]: current.filter((_, i) => i !== peakIndex),
+    }));
   }
 
   async function handleDetectPeaks() {
@@ -226,13 +246,26 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     }
   }
 
-  // El botón "Detectar y ajustar picos" vive ahora en la columna
-  // izquierda (dentro del panel de cálculos); avisa aquí mediante un
-  // contador que va subiendo cada vez que se pulsa.
+  // El botón "Detectar picos" vive ahora en la columna izquierda
+  // (dentro del panel de cálculos); avisa aquí mediante un contador
+  // que va subiendo cada vez que se pulsa.
   useEffect(() => {
     if (detectPeaksSignal > 0) handleDetectPeaks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detectPeaksSignal]);
+
+  // "Colocar manualmente": borra los picos del canal en foco (o el
+  // primero seleccionado si no hay ninguno en foco) y activa el modo
+  // manual desde cero -distinto de "Detectar", que parte de lo ya
+  // detectado automáticamente-.
+  useEffect(() => {
+    if (manualPlaceSignal === 0 || channelSelection.length === 0) return;
+    const targetIndex = manualPeakActiveIndex !== null ? manualPeakActiveIndex : channelSelection[0].index;
+    pushPeakHistory(targetIndex, manualPeaks[targetIndex] || []);
+    setManualPeaks((prev) => ({ ...prev, [targetIndex]: [] }));
+    setManualPeakActiveIndex(targetIndex);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualPlaceSignal]);
 
   // Al activar "Manual" desde el panel de canales (para un único
   // canal), primero se detectan sus picos automáticamente -si no los
@@ -405,7 +438,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   const peakMarkers =
     manualPeakActiveIndex !== null && totalDurationMs > 0
       ? (manualPeaks[manualPeakActiveIndex] || [])
-          .map((t) => {
+          .map((t, originalIndex) => {
             const absFraction = t / totalDurationMs;
             const fraction = zoomedToSegment ? (absFraction - segmentStart) / (segmentEnd - segmentStart) : absFraction;
             const idx = Math.round(fraction * (activeChannelValues.length - 1));
@@ -415,6 +448,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
               value,
               label: activeChannelSel?.label || `canal ${manualPeakActiveIndex}`,
               colorClass: `channel-color-${manualPeakActiveIndex % 8}`,
+              originalIndex,
             };
           })
           .filter((p) => p.fraction >= -0.001 && p.fraction <= 1.001)
@@ -503,6 +537,8 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           <WaveformView
             channelsData={compareMode && compareData ? compareData : waveformData}
             onManualPeakClick={!compareMode && manualPeakActiveIndex !== null ? handleManualPeakClick : undefined}
+            onPeakDrag={!compareMode && manualPeakActiveIndex !== null ? handlePeakDrag : undefined}
+            onPeakRemove={!compareMode && manualPeakActiveIndex !== null ? handlePeakRemove : undefined}
             peakMarkers={compareMode ? [] : peakMarkers}
             activeChannelPosition={
               compareMode || manualPeakActiveIndex === null
