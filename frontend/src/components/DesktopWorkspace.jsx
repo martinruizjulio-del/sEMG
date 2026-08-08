@@ -31,6 +31,7 @@ export default function DesktopWorkspace({
 }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
+  const [showAiConfigure, setShowAiConfigure] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiConfiguring, setAiConfiguring] = useState(false);
   const [aiNote, setAiNote] = useState("");
@@ -441,7 +442,18 @@ export default function DesktopWorkspace({
   }
 
   async function handleDetectPeaks() {
-    if (!file || !activeSubjectId || channelSelection.length === 0) return;
+    if (!file) {
+      setError("Sube un archivo antes de detectar picos.");
+      return;
+    }
+    if (!activeSubjectId) {
+      setError("Selecciona o crea un sujeto antes de detectar picos.");
+      return;
+    }
+    if (channelSelection.length === 0) {
+      setError("Selecciona al menos un canal (panel de Canales, a la derecha) antes de detectar picos.");
+      return;
+    }
     setError("");
     setDetectingPeaks(true);
     try {
@@ -750,6 +762,15 @@ export default function DesktopWorkspace({
             <ModeSwitch value={mode} onChange={setMode} />
             <button
               type="button"
+              className={`workspace-btn-ghost ${showAiConfigure ? "is-active" : ""}`}
+              onClick={() => setShowAiConfigure((v) => !v)}
+              disabled={!preview}
+              title={!preview ? "Sube un archivo primero" : "Configurar el análisis describiéndolo en texto"}
+            >
+              🤖 Modo IA
+            </button>
+            <button
+              type="button"
               className="workspace-btn-ghost"
               onClick={() => setShowSequential(true)}
               disabled={!analyzeResult}
@@ -765,7 +786,7 @@ export default function DesktopWorkspace({
             </p>
           )}
 
-          {preview && (
+          {preview && showAiConfigure && (
             <div className="ai-configure-box">
               <label className="ai-configure-label">
                 🤖 Configurar con IA (describe en texto lo que quieres analizar)

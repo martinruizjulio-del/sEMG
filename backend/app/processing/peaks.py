@@ -40,10 +40,15 @@ def detect_peaks(signal_1d: np.ndarray, fs: float, params: PeakParams) -> PeakRe
     vals = signal_1d[idx]
 
     if params.n_peaks is not None and len(idx) > params.n_peaks:
-        # Igual que 'NPeaks' de MATLAB: se queda con los N primeros
-        # (en orden temporal) tras aplicar el resto de restricciones.
-        idx = idx[: params.n_peaks]
-        vals = vals[: params.n_peaks]
+        # A diferencia del 'NPeaks' por defecto de MATLAB (que se queda
+        # con los N primeros en el tiempo, de izquierda a derecha -y
+        # puede coger picos pequeños del principio en vez de los
+        # relevantes-), aquí se seleccionan los N de MAYOR amplitud, y
+        # luego se reordenan por tiempo para mantener la cronología.
+        top = np.argsort(vals)[::-1][: params.n_peaks]  # de mayor a menor valor
+        top = np.sort(top)  # de vuelta al orden temporal
+        idx = idx[top]
+        vals = vals[top]
 
     times_ms = (idx / fs) * 1000.0
     return PeakResult(indices=idx, values=vals, times_ms=times_ms)
