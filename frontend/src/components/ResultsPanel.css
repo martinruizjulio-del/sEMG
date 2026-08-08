@@ -62,11 +62,11 @@
 }
 
 .results-table th {
-  text-align: left;
+  text-align: center;
   color: var(--text-tertiary);
   text-transform: capitalize;
   font-weight: 500;
-  padding: 4px 10px 4px 0;
+  padding: 4px 10px;
   border-bottom: 1px solid var(--border-strong);
 }
 
@@ -90,9 +90,10 @@
 }
 
 .results-table td {
-  padding: 5px 10px 5px 0;
+  padding: 5px 10px;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border);
+  text-align: center;
 }
 
 .results-table td:first-child {
