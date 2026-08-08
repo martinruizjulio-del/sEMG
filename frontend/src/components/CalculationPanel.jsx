@@ -18,6 +18,8 @@ export default function CalculationPanel({
   onChangePeakConfig,
   peakWindowConfig,
   onChangePeakWindowConfig,
+  timeBinsConfig,
+  onChangeTimeBinsConfig,
   onDetectPeaks,
   onManualPlace,
   smooth,
@@ -190,6 +192,81 @@ export default function CalculationPanel({
             </div>
           )}
         </>
+      )}
+
+      <div className="calc-section-label calc-section-label-picos">Evolución temporal</div>
+      <div className="calc-grid">
+        <button
+          type="button"
+          className={`calc-chip ${calculations.includes("tramos") ? "is-active" : ""}`}
+          onClick={() => toggle("tramos")}
+          title="Divide el tramo analizado en partes iguales y calcula media/máximo por cada una"
+        >
+          Tramos
+        </button>
+      </div>
+
+      {calculations.includes("tramos") && timeBinsConfig && (
+        <div className="time-bins-config">
+          <div className="time-bins-mode">
+            <label>
+              <input
+                type="radio"
+                name="time-bins-mode"
+                checked={timeBinsConfig.mode === "count"}
+                onChange={() => onChangeTimeBinsConfig({ ...timeBinsConfig, mode: "count" })}
+              />
+              Nº de tramos
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="time-bins-mode"
+                checked={timeBinsConfig.mode === "duration"}
+                onChange={() => onChangeTimeBinsConfig({ ...timeBinsConfig, mode: "duration" })}
+              />
+              Duración por tramo
+            </label>
+          </div>
+
+          {timeBinsConfig.mode === "count" ? (
+            <label className="time-bins-field">
+              Nº de tramos (reparte el tiempo total en partes iguales)
+              <input
+                type="number"
+                min="2"
+                value={timeBinsConfig.count}
+                onChange={(e) => onChangeTimeBinsConfig({ ...timeBinsConfig, count: e.target.value })}
+                placeholder="4"
+              />
+            </label>
+          ) : (
+            <label className="time-bins-field">
+              Duración de cada tramo
+              <div className="time-bins-duration-row">
+                <input
+                  type="number"
+                  min="1"
+                  value={timeBinsConfig.durationValue}
+                  onChange={(e) => onChangeTimeBinsConfig({ ...timeBinsConfig, durationValue: e.target.value })}
+                  placeholder="5"
+                />
+                <select
+                  value={timeBinsConfig.durationUnit}
+                  onChange={(e) => onChangeTimeBinsConfig({ ...timeBinsConfig, durationUnit: e.target.value })}
+                >
+                  <option value="ms">ms</option>
+                  <option value="s">s</option>
+                  <option value="min">min</option>
+                </select>
+              </div>
+            </label>
+          )}
+          <p className="calc-hint">
+            Para cada tramo se calcula la media y el máximo de activación, sobre el tramo de tiempo ya seleccionado
+            (recorte/zoom del gráfico).
+          </p>
+        </div>
       )}
     </div>
   );

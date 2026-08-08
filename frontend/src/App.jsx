@@ -19,6 +19,15 @@ function AppShell() {
   // los N ms antes y/o después de cada pico, para varios márgenes a
   // la vez (separados por comas, p.ej. "25, 50, 100").
   const [peakWindowConfig, setPeakWindowConfig] = useState({ marginsText: "", before: true, after: true });
+  // Evolución temporal: dividir el tramo analizado en partes iguales
+  // (por nº de tramos o por duración de cada uno) y ver media/máximo
+  // por tramo.
+  const [timeBinsConfig, setTimeBinsConfig] = useState({
+    mode: "count",
+    count: "4",
+    durationValue: "5",
+    durationUnit: "min",
+  });
   // Suavizado tipo smoothdata() de MATLAB: es sí/no (sin niveles
   // intermedios), y afecta de verdad a los cálculos -no es solo un
   // efecto visual-, aplicado tras el RMS, igual que en el script de
@@ -71,6 +80,8 @@ function AppShell() {
         onChangePeakConfig={setPeakConfig}
         peakWindowConfig={peakWindowConfig}
         onChangePeakWindowConfig={setPeakWindowConfig}
+        timeBinsConfig={timeBinsConfig}
+        onChangeTimeBinsConfig={setTimeBinsConfig}
         onDetectPeaks={() => setDetectPeaksSignal((n) => n + 1)}
         onManualPlace={() => setManualPlaceSignal((n) => n + 1)}
         smooth={smooth}
@@ -84,6 +95,7 @@ function AppShell() {
           calculations={calculations}
           peakConfig={peakConfig}
           peakWindowConfig={peakWindowConfig}
+          timeBinsConfig={timeBinsConfig}
           detectPeaksSignal={detectPeaksSignal}
           manualPlaceSignal={manualPlaceSignal}
           smooth={smooth}

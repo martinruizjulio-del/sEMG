@@ -14,6 +14,8 @@ export default function DesktopList({
   onChangePeakConfig,
   peakWindowConfig,
   onChangePeakWindowConfig,
+  timeBinsConfig,
+  onChangeTimeBinsConfig,
   onDetectPeaks,
   onManualPlace,
   smooth,
@@ -87,6 +89,8 @@ export default function DesktopList({
             onChangePeakConfig={onChangePeakConfig}
             peakWindowConfig={peakWindowConfig}
             onChangePeakWindowConfig={onChangePeakWindowConfig}
+            timeBinsConfig={timeBinsConfig}
+            onChangeTimeBinsConfig={onChangeTimeBinsConfig}
             onDetectPeaks={onDetectPeaks}
             onManualPlace={onManualPlace}
             smooth={smooth}

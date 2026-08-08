@@ -11,7 +11,7 @@ import SequentialMode from "./SequentialMode";
 import ExternalLink from "./ExternalLink";
 import "./DesktopWorkspace.css";
 
-export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, peakWindowConfig, detectPeaksSignal, manualPlaceSignal, smooth }) {
+export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculations, peakConfig, peakWindowConfig, timeBinsConfig, detectPeaksSignal, manualPlaceSignal, smooth }) {
   const [subjects, setSubjects] = useState([]);
   const [activeSubjectId, setActiveSubjectId] = useState(null);
 
@@ -25,6 +25,18 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           .filter((n) => !isNaN(n) && n > 0),
         before: peakWindowConfig.before,
         after: peakWindowConfig.after,
+      }
+    : null;
+
+  // Convierte "duración + unidad" a milisegundos para el backend.
+  const UNIT_TO_MS = { ms: 1, s: 1000, min: 60000 };
+  const parsedTimeBinsConfig = timeBinsConfig
+    ? {
+        mode: timeBinsConfig.mode,
+        count: timeBinsConfig.count ? parseInt(timeBinsConfig.count, 10) : null,
+        duration_ms: timeBinsConfig.durationValue
+          ? parseFloat(timeBinsConfig.durationValue) * (UNIT_TO_MS[timeBinsConfig.durationUnit] || 1)
+          : null,
       }
     : null;
 
@@ -342,6 +354,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
         calculations,
         peak_config: peakConfig,
         peak_window_config: parsedPeakWindowConfig,
+        time_bins_config: parsedTimeBinsConfig,
         smooth,
         save_results: true,
         segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -377,6 +390,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           calculations,
           peak_config: peakConfig,
           peak_window_config: parsedPeakWindowConfig,
+          time_bins_config: parsedTimeBinsConfig,
           smooth,
           save_results: false,
           segment_start_ms: segmentStart > 0 ? segmentStart * totalDurationMs : null,
@@ -394,7 +408,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
     }, 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, peakWindowConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
+  }, [file, activeSubjectId, channelSelection, calculations, peakConfig, peakWindowConfig, timeBinsConfig, smooth, segmentStart, segmentEnd, manualPeakActiveIndex, manualPeaks]);
 
   async function handleExport() {
     const blob = await api.exportDesktop(desktop.id);
@@ -699,6 +713,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             calculations={calculations}
             peakConfig={peakConfig}
             peakWindowConfig={parsedPeakWindowConfig}
+            timeBinsConfig={parsedTimeBinsConfig}
             smooth={smooth}
             disabled={!preview}
             onDone={() => {

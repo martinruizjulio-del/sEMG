@@ -229,6 +229,27 @@ async def analyze_file(
                                 if len(window) > 0:
                                     metrics[f"pico_{peak_num}_post_{margin_label}_media"] = float(np.mean(window))
                                     metrics[f"pico_{peak_num}_post_{margin_label}_maximo"] = float(np.max(window))
+            elif calc == "tramos":
+                tbc = request.time_bins_config
+                if tbc:
+                    n_samples_ch = len(processed)
+                    total_ms_ch = (n_samples_ch / fs) * 1000.0
+                    if tbc.mode == "count" and tbc.count and tbc.count > 0:
+                        n_bins = tbc.count
+                        bin_samples = max(1, n_samples_ch // n_bins)
+                    elif tbc.mode == "duration" and tbc.duration_ms and tbc.duration_ms > 0:
+                        bin_samples = max(1, int(round((tbc.duration_ms / 1000.0) * fs)))
+                        n_bins = max(1, -(-n_samples_ch // bin_samples))  # ceil
+                    else:
+                        n_bins = 0
+                        bin_samples = 0
+                    for b in range(n_bins):
+                        start = b * bin_samples
+                        end = n_samples_ch if b == n_bins - 1 else min(n_samples_ch, start + bin_samples)
+                        window = processed[start:end]
+                        if len(window) > 0:
+                            metrics[f"tramo_{b + 1}_media"] = float(np.mean(window))
+                            metrics[f"tramo_{b + 1}_maximo"] = float(np.max(window))
             elif calc == "frecuencia":
                 notched = apply_notch(processed_filtered, fs=fs)
                 metrics["frecuencia_dominante_hz"] = dominant_frequency(notched, fs=fs)

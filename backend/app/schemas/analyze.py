@@ -27,14 +27,24 @@ class PeakWindowConfig(BaseModel):
     after: bool = True
 
 
+class TimeBinsConfig(BaseModel):
+    """División del tramo analizado en partes iguales, para ver la
+    evolución de la activación (media y máximo) tramo a tramo -p.ej.
+    los primeros 5' frente a los segundos 5' de una grabación-."""
+    mode: Literal["count", "duration"] = "count"
+    count: Optional[int] = None          # nº de tramos (modo "count")
+    duration_ms: Optional[float] = None  # duración de cada tramo (modo "duration")
+
+
 class AnalyzeRequest(BaseModel):
     channels: list[ChannelSelection]  # qué canales analizar y cómo tratarlos
     calculations: list[Literal[
-        "media", "maximo", "mediana", "picos", "lapso", "picos_ventana", "frecuencia", "fatiga",
+        "media", "maximo", "mediana", "picos", "lapso", "picos_ventana", "tramos", "frecuencia", "fatiga",
         "ratio_bilateral", "normalizacion", "orden_activacion",
     ]]
     peak_config: Optional[PeakConfig] = None
     peak_window_config: Optional[PeakWindowConfig] = None
+    time_bins_config: Optional[TimeBinsConfig] = None
     rms_num_points: int = 51
     # Suavizado tipo smoothdata() de MATLAB (ventana automática),
     # aplicado tras el RMS y antes de calcular media/máximo/picos/etc.

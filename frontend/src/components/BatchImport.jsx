@@ -14,7 +14,7 @@ import "./BatchImport.css";
  * distintos (p.ej. un salto: despegue, vacío, caída) -esos archivos
  * es mejor analizarlos uno a uno con el recorte visual de arriba-.
  */
-export default function BatchImport({ desktopId, channelSelection, calculations, peakConfig, peakWindowConfig, smooth, onDone, disabled }) {
+export default function BatchImport({ desktopId, channelSelection, calculations, peakConfig, peakWindowConfig, timeBinsConfig, smooth, onDone, disabled }) {
   const [files, setFiles] = useState([]);
   const [group, setGroup] = useState("experimental");
   const [running, setRunning] = useState(false);
@@ -56,6 +56,7 @@ export default function BatchImport({ desktopId, channelSelection, calculations,
           calculations,
           peak_config: peakConfig,
           peak_window_config: peakWindowConfig,
+          time_bins_config: timeBinsConfig,
           smooth,
           save_results: true,
           segment_start_ms: segmentStartMs,
