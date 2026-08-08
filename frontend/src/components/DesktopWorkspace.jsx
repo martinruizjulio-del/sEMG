@@ -48,6 +48,7 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
   const [strokeWidth, setStrokeWidth] = useState(1.4);
   const [chartStyle, setChartStyle] = useState("line");
   const [showGrid, setShowGrid] = useState(true);
+  const [graphExpanded, setGraphExpanded] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
 
   const [analyzing, setAnalyzing] = useState(false);
@@ -486,6 +487,26 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           .filter((p) => p.fraction >= -0.001 && p.fraction <= 1.001)
       : [];
 
+  // Props compartidas entre el gráfico normal y su versión ampliada
+  // (modal), para no duplicar todo el bloque dos veces.
+  const waveformProps = {
+    channelsData: compareMode && compareData ? compareData : waveformData,
+    onManualPeakClick: !compareMode && manualPeakActiveIndex !== null ? handleManualPeakClick : undefined,
+    onPeakDrag: !compareMode && manualPeakActiveIndex !== null ? handlePeakDrag : undefined,
+    onPeakRemove: !compareMode && manualPeakActiveIndex !== null ? handlePeakRemove : undefined,
+    peakMarkers: compareMode ? [] : peakMarkers,
+    activeChannelPosition:
+      compareMode || manualPeakActiveIndex === null
+        ? null
+        : channelSelection.findIndex((c) => c.index === manualPeakActiveIndex),
+    segmentStartFraction: zoomedToSegment ? 0 : segmentStart,
+    segmentEndFraction: zoomedToSegment ? 1 : segmentEnd,
+    totalDurationMs: zoomedToSegment ? (segmentEnd - segmentStart) * totalDurationMs : totalDurationMs,
+    strokeWidth,
+    chartStyle,
+    showGrid,
+  };
+
   return (
     <div className="workspace">
       <header className="workspace-header">
@@ -566,24 +587,16 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
             </div>
           )}
 
-          <WaveformView
-            channelsData={compareMode && compareData ? compareData : waveformData}
-            onManualPeakClick={!compareMode && manualPeakActiveIndex !== null ? handleManualPeakClick : undefined}
-            onPeakDrag={!compareMode && manualPeakActiveIndex !== null ? handlePeakDrag : undefined}
-            onPeakRemove={!compareMode && manualPeakActiveIndex !== null ? handlePeakRemove : undefined}
-            peakMarkers={compareMode ? [] : peakMarkers}
-            activeChannelPosition={
-              compareMode || manualPeakActiveIndex === null
-                ? null
-                : channelSelection.findIndex((c) => c.index === manualPeakActiveIndex)
-            }
-            segmentStartFraction={zoomedToSegment ? 0 : segmentStart}
-            segmentEndFraction={zoomedToSegment ? 1 : segmentEnd}
-            totalDurationMs={zoomedToSegment ? (segmentEnd - segmentStart) * totalDurationMs : totalDurationMs}
-            strokeWidth={strokeWidth}
-            chartStyle={chartStyle}
-            showGrid={showGrid}
-          />
+          <WaveformView {...waveformProps} />
+
+          <button
+            type="button"
+            className="workspace-btn-ghost graph-expand-btn"
+            onClick={() => setGraphExpanded(true)}
+            disabled={waveformData.length === 0 && !(compareMode && compareData)}
+          >
+            ⛶ Ampliar gráfico
+          </button>
 
           {channelSelection.length > 0 && (
             <div className="compare-toggle-row">
@@ -752,6 +765,20 @@ export default function DesktopWorkspace({ desktop, onDesktopUpdated, calculatio
           totalDurationMs={totalDurationMs}
           onClose={() => setShowSequential(false)}
         />
+      )}
+
+      {graphExpanded && (
+        <div className="graph-expand-overlay" onClick={() => setGraphExpanded(false)}>
+          <div className="graph-expand-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="graph-expand-header">
+              <h3>Gráfico ampliado</h3>
+              <button type="button" className="workspace-btn-ghost" onClick={() => setGraphExpanded(false)}>
+                Cerrar ✕
+              </button>
+            </div>
+            <WaveformView {...waveformProps} height={520} />
+          </div>
+        </div>
       )}
     </div>
   );
