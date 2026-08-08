@@ -58,8 +58,8 @@
   color: #1a1305;
   border: none;
   border-radius: var(--radius-sm);
-  padding: 8px 14px;
-  font-size: 12px;
+  padding: 9px 16px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -330,8 +330,8 @@
   background: none;
   border: none;
   color: var(--text-tertiary);
-  font-size: 11px;
-  padding: 4px 10px;
+  font-size: 12px;
+  padding: 6px 12px;
 }
 
 .chart-style-switch button.is-active {
@@ -416,5 +416,11 @@
 
   .upload-row {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .waveform-svg {
+    height: 220px;
   }
 }

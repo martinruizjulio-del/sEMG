@@ -12,6 +12,12 @@
   display: block;
 }
 
+@media (min-width: 1400px) {
+  .waveform-svg {
+    height: 340px;
+  }
+}
+
 .waveform-baseline {
   stroke: var(--border);
   stroke-width: 1;

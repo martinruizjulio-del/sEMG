@@ -72,7 +72,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await verifyCode(email, code);
-    } catch (err) {
+    } catch {
       setError("Código no válido o caducado.");
     } finally {
       setLoading(false);

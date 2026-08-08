@@ -175,7 +175,7 @@
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
   font-size: 11px;
-  padding: 4px 8px;
+  padding: 5px 9px;
 }
 
 .channel-manual-btn.is-active {

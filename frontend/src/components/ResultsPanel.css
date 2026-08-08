@@ -33,8 +33,8 @@
   background: none;
   border: none;
   color: var(--text-tertiary);
-  font-size: 11px;
-  padding: 4px 10px;
+  font-size: 12px;
+  padding: 6px 12px;
 }
 
 .results-view-switch button.is-active {
@@ -51,6 +51,14 @@
   border-collapse: collapse;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.results-table th:first-child,
+.results-table td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--bg);
+  z-index: 1;
 }
 
 .results-table th {
@@ -102,7 +110,7 @@
   color: var(--text-tertiary);
   border-radius: var(--radius-sm);
   font-size: 11px;
-  padding: 4px 8px;
+  padding: 5px 9px;
   margin-bottom: 8px;
 }
 
